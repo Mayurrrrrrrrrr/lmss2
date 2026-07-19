@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firefly LMS - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="background-animation">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2" style="background: rgba(0, 168, 150, 0.4);"></div>
+    </div>
+
+    <nav class="dashboard-nav glass-panel" style="border-radius: 0; margin: 0; border-top: none; border-left: none; border-right: none;">
+        <div class="nav-logo">
+            <div class="logo-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                </svg>
+            </div>
+            Firefly LMS
+        </div>
+        <div>
+            <button id="logout-btn" class="primary-button" style="padding: 10px 20px; width: auto; font-size: 14px; background: rgba(239, 68, 68, 0.9);">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <main class="dashboard-content">
+        <div class="welcome-card glass-panel">
+            <h1 id="welcome-message">Welcome to your Dashboard!</h1>
+            <p>You have successfully logged in to the new Native Web Frontend.</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card glass-panel" style="background: rgba(255,255,255,0.4);">
+                    <div class="stat-title">Courses Enrolled</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card glass-panel" style="background: rgba(255,255,255,0.4);">
+                    <div class="stat-title">Certificates</div>
+                    <div class="stat-value">0</div>
+                </div>
+                <div class="stat-card glass-panel" style="background: rgba(255,255,255,0.4);">
+                    <div class="stat-title">Learning Hours</div>
+                    <div class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Protect Route
+            const token = localStorage.getItem('api_token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Handle Logout
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                api.auth.logout();
+            });
+
+            // Set Welcome Message
+            try {
+                const userData = await api.user.getProfile();
+                if (userData && (userData.name || userData.username || userData.first_name)) {
+                    const name = userData.name || userData.first_name || userData.username;
+                    document.getElementById('welcome-message').textContent = `Welcome back, ${name}!`;
+                }
+            } catch(e) {
+                console.error("Could not parse user data", e);
+            }
+        });
+    </script>
+</body>
+</html>
