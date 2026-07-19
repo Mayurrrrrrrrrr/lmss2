@@ -24,7 +24,7 @@ async function apiCall(endpoint, options = {}) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message || data.error || 'An error occurred while communicating with the server.');
+            throw new Error(data.detail || data.message || data.error || 'An error occurred while communicating with the server.');
         }
 
         return data;
