@@ -1,12 +1,27 @@
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/admin_dashboard_response.dart';
 import '../models/login_response.dart';
 
 class ApiService {
-  final Dio _dio = Dio(BaseOptions(
-    baseUrl: 'https://lms2.yuktaa.com/api/v2',
-    // In a real app, add auth interceptors here
-  ));
+  late final Dio _dio;
+
+  ApiService() {
+    _dio = Dio(BaseOptions(
+      baseUrl: 'https://lms2.yuktaa.com/api/v2',
+    ));
+
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('jwt_token');
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+    ));
+  }
 
   Future<AdminDashboardResponse> getAdminDashboard() async {
     try {
