@@ -20,7 +20,7 @@ class ApiService {
   Future<LoginResponse> login(String username, String password, String appVersion) async {
     try {
       final response = await _dio.post(
-        '/login',
+        '/auth/login',
         data: {
           'username': username,
           'password': password,
