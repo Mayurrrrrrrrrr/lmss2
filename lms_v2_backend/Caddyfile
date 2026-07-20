@@ -1,0 +1,41 @@
+# Global Configuration
+{
+    # Optimize memory usage for low-RAM (1GB) environments
+    # Disable admin API to save memory footprint
+    admin off
+}
+
+# Domain Configuration
+lms.yuktaa.com {
+    # 1. Automatic HTTPS Provisioning
+    # Caddy will securely fetch and auto-renew SSL certs via Let's Encrypt
+    tls support@yuktaa.com
+
+    # 2. High-Performance Data Compression
+    # Squeezes JSON responses to radically reduce bandwidth and speed up mobile app parsing
+    encode zstd gzip
+
+    # 3. CORS Headers (Optional: adjust if frontend is hosted on a different domain)
+    header {
+        Access-Control-Allow-Origin *
+        Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+    }
+
+    # 4. FastAPI Reverse Proxy
+    # Forward all V2 API requests directly to the lightweight Uvicorn instance running locally
+    handle /api/v2/* {
+        # Caddy automatically handles WebSocket Upgrade headers transparently
+        reverse_proxy localhost:8000 {
+            # Health checks (optional) to ensure Uvicorn is alive
+            health_uri /api/health
+            health_interval 10s
+        }
+    }
+
+    # Fallback to legacy V1 PHP backend for unmigrated endpoints (optional)
+    # handle /api/* {
+    #     php_fastcgi unix//run/php/php8.1-fpm.sock
+    #     root * /var/www/lms_portal
+    # }
+}

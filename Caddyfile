@@ -1,0 +1,25 @@
+lms2.yuktaa.com {
+    log {
+        output file /var/log/caddy/access.log
+    }
+
+    # 1. Disable caching for HTML and JS (aggressive cache-busting)
+    @static {
+        path *.html *.js *.json
+    }
+    header @static Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+
+    # 2. Define where the Flutter Web portal lives
+    root * /var/www/lms-web
+
+    # 3. Route /api/* requests directly to your FastAPI backend
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+
+    # 4. Handle Single Page Application routing (Flutter)
+    handle {
+        try_files {path} /index.html
+        file_server
+    }
+}

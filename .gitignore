@@ -1,45 +1,27 @@
-# Miscellaneous
-*.class
-*.log
+# Gitignore for monorepo
+
+# Secrets and Keys
+*.key
+*.key.pub
+*.zip
+*.sql
+wallet/
+lms_v2_backend/.env
+lms_v2_backend/venv/
+lms_v2_backend/uvicorn.log
+lms_v2_backend/append.py
+lms_v2_backend/query_db.py
+
+# Python
+__pycache__/
 *.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Flutter/Dart
+lmss2/.dart_tool/
+lmss2/.packages
+lmss2/build/
+lmss2/web.tar.gz
+lmss2/update_interceptors.py
+remote_security.py
+New Text Document.txt
+old_php.tar.gz
