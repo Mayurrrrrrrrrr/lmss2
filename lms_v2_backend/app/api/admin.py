@@ -184,7 +184,6 @@ async def get_departments(
             for r in rows
         ]}
 
-
 @router.get("/users")
 async def get_users(
     current_user: UserProfile = Depends(require_admin),
@@ -245,3 +244,118 @@ async def get_departments(
         await cursor.execute("SELECT id, department_name, created_at FROM departments ORDER BY id")
         rows = await cursor.fetchall()
         return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
+
+
+@router.get("/pages")
+async def get_pages(
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("SELECT id, url_slug, title, html_content, is_public, created_at FROM static_pages ORDER BY id")
+        rows = await cursor.fetchall()
+        return [{"id": r[0], "slug": r[1], "title": r[2], "content": str(r[3]), "is_active": bool(r[4]), "created_at": r[5]} for r in rows]
+
+
+@router.post("/pages")
+async def create_page(
+    page: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        # Get next ID
+        await cursor.execute("SELECT NVL(MAX(id), 0) + 1 FROM static_pages")
+        next_id = (await cursor.fetchone())[0]
+        await cursor.execute("""
+            INSERT INTO static_pages (id, url_slug, title, html_content, is_public, created_by)
+            VALUES (:1, :2, :3, :4, :5, :6)
+        """, (next_id, page.get("slug"), page.get("title"), page.get("content"), 1 if page.get("is_active", True) else 0, current_user.id))
+        await conn.commit()
+        return {"success": True, "id": next_id}
+
+
+@router.get("/logs")
+async def get_logs(
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT e.id, e.created_at, e.error_level, e.message, u.username
+            FROM system_errors e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.created_at DESC
+            FETCH FIRST 50 ROWS ONLY
+        """)
+        rows = await cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "timestamp": r[1],
+                "level": r[2],
+                "message": r[3],
+                "user": r[4] or "system"
+            }
+            for r in rows
+        ]
+
+
+@router.get("/recycle")
+async def get_recycle(
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        # Courses
+        await cursor.execute("SELECT id, title, created_by, deleted_at FROM courses WHERE deleted_at IS NOT NULL")
+        courses_rows = await cursor.fetchall()
+        courses = [{"id": r[0], "type": "course", "title": r[1], "trainer": str(r[2]), "deleted_at": r[3], "extra_info": ""} for r in courses_rows]
+
+        # Modules
+        await cursor.execute("SELECT m.id, m.title, c.title, m.deleted_at FROM modules m JOIN courses c ON m.course_id = c.id WHERE m.deleted_at IS NOT NULL")
+        modules_rows = await cursor.fetchall()
+        modules = [{"id": r[0], "type": "module", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Course: {r[2]}"} for r in modules_rows]
+
+        # Chapters
+        await cursor.execute("SELECT ch.id, ch.title, m.title, ch.deleted_at FROM chapters ch JOIN modules m ON ch.module_id = m.id WHERE ch.deleted_at IS NOT NULL")
+        chapters_rows = await cursor.fetchall()
+        chapters = [{"id": r[0], "type": "chapter", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Module: {r[2]}"} for r in chapters_rows]
+
+        return courses + modules + chapters
+
+
+import psutil
+import app.core.database as db_module
+
+@router.get("/diagnostics")
+async def get_diagnostics(
+    current_user: UserProfile = Depends(require_admin)
+):
+    # Oracle pool diagnostics
+    pool_opened = 0
+    pool_busy = 0
+    if db_module._pool:
+        try:
+            pool_opened = db_module._pool.opened
+            pool_busy = db_module._pool.busy
+        except Exception:
+            pass
+
+    # CPU and memory diagnostics
+    cpu_percent = psutil.cpu_percent()
+    virtual_mem = psutil.virtual_memory()
+    
+    return {
+        "success": True,
+        "database": {
+            "status": "connected" if db_module._pool else "disconnected",
+            "opened_connections": pool_opened,
+            "busy_connections": pool_busy,
+        },
+        "system": {
+            "cpu_usage_percent": cpu_percent,
+            "memory_usage_percent": virtual_mem.percent,
+            "memory_available_mb": round(virtual_mem.available / (1024 * 1024), 2),
+        }
+    }

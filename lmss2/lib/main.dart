@@ -24,6 +24,7 @@ import 'screens/recycle_bin_screen.dart';
 import 'screens/stores_screen.dart';
 import 'screens/designations_screen.dart';
 import 'screens/departments_screen.dart';
+import 'screens/diagnostics_screen.dart';
 
 void main() {
   runApp(
@@ -138,6 +139,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/admin/departments',
           builder: (context, state) => const DepartmentsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/diagnostics',
+          builder: (context, state) => const DiagnosticsScreen(),
         ),
       ],
     );
