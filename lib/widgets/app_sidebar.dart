@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
 class AppSidebar extends StatelessWidget {
   final String role;
@@ -7,6 +10,8 @@ class AppSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentRoute = GoRouterState.of(context).matchedLocation;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -33,29 +38,36 @@ class AppSidebar extends StatelessWidget {
             ),
           ),
           _buildSectionHeader('Main'),
-          _buildListTile(Icons.dashboard, 'Home', true),
+          _buildListTile(context, Icons.dashboard, 'Home', '/dashboard', currentRoute),
 
           if (role == 'admin') ...[
             _buildSectionHeader('Management'),
-            _buildListTile(Icons.group, 'Manage Users', false),
-            _buildListTile(Icons.pages, 'Static Pages', false),
+            _buildListTile(context, Icons.group, 'Manage Users', '/admin/users', currentRoute),
+            _buildListTile(context, Icons.people, 'Participants', '/admin/participants', currentRoute),
+            _buildListTile(context, Icons.pages, 'Static Pages', '/admin/pages', currentRoute),
 
             _buildSectionHeader('Masters'),
-            _buildListTile(Icons.store, 'Store Master', false),
-            _buildListTile(Icons.badge, 'Designations', false),
-            _buildListTile(Icons.account_tree, 'Departments', false),
+            _buildListTile(context, Icons.store, 'Store Master', '/admin/stores', currentRoute),
+            _buildListTile(context, Icons.badge, 'Designations', '/admin/designations', currentRoute),
+            _buildListTile(context, Icons.account_tree, 'Departments', '/admin/departments', currentRoute),
 
             _buildSectionHeader('System'),
-            _buildListTile(Icons.error_outline, 'Error Logs', false),
-            _buildListTile(Icons.monitor_heart, 'Diagnostics', false),
-            _buildListTile(Icons.delete_outline, 'Recycle Bin', false),
-            _buildListTile(Icons.visibility, 'Impersonate User', false),
+            _buildListTile(context, Icons.error_outline, 'Error Logs', '/admin/logs', currentRoute),
+            _buildListTile(context, Icons.monitor_heart, 'Diagnostics', '/admin/diagnostics', currentRoute),
+            _buildListTile(context, Icons.delete_outline, 'Recycle Bin', '/admin/recycle', currentRoute),
+            _buildListTile(context, Icons.visibility, 'Impersonate User', '/admin/impersonate', currentRoute),
           ],
           
           const Divider(),
-          _buildListTile(Icons.person_outline, 'My Profile', false),
-          _buildListTile(Icons.lock_outline, 'Change Password', false),
-          _buildListTile(Icons.logout, 'Sign Out', false, textColor: Colors.red),
+          _buildListTile(context, Icons.person_outline, 'My Profile', '/profile', currentRoute),
+          _buildListTile(context, Icons.lock_outline, 'Change Password', '/password', currentRoute),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+            onTap: () {
+              context.read<AuthProvider>().logout();
+            },
+          ),
         ],
       ),
     );
@@ -75,19 +87,20 @@ class AppSidebar extends StatelessWidget {
     );
   }
 
-  Widget _buildListTile(IconData icon, String title, bool isActive, {Color? textColor}) {
+  Widget _buildListTile(BuildContext context, IconData icon, String title, String route, String currentRoute) {
+    final isActive = currentRoute == route;
     return ListTile(
-      leading: Icon(icon, color: isActive ? Colors.blue : (textColor ?? Colors.black54)),
+      leading: Icon(icon, color: isActive ? Colors.blue : Colors.black54),
       title: Text(
         title,
         style: TextStyle(
-          color: isActive ? Colors.blue : (textColor ?? Colors.black87),
+          color: isActive ? Colors.blue : Colors.black87,
           fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       selected: isActive,
       onTap: () {
-        // Navigation logic here
+        context.go(route);
       },
     );
   }

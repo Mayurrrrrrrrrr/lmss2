@@ -4,9 +4,26 @@ import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/users_provider.dart';
+import 'providers/static_pages_provider.dart';
+import 'providers/stores_provider.dart';
+import 'providers/designations_provider.dart';
+import 'providers/departments_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin_dashboard_screen.dart';
 import 'screens/users_screen.dart';
+import 'screens/static_pages_screen.dart';
+import 'screens/participants_screen.dart';
+import 'screens/trainer_dashboard_screen.dart';
+import 'screens/participant_dashboard_screen.dart';
+import 'providers/participants_provider.dart';
+import 'screens/profile_screen.dart';
+import 'screens/change_password_screen.dart';
+import 'screens/impersonate_screen.dart';
+import 'screens/error_logs_screen.dart';
+import 'screens/recycle_bin_screen.dart';
+import 'screens/stores_screen.dart';
+import 'screens/designations_screen.dart';
+import 'screens/departments_screen.dart';
 
 void main() {
   runApp(
@@ -14,6 +31,11 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => UsersProvider()),
+        ChangeNotifierProvider(create: (_) => ParticipantsProvider()),
+        ChangeNotifierProvider(create: (_) => StaticPagesProvider()),
+        ChangeNotifierProvider(create: (_) => StoresProvider()),
+        ChangeNotifierProvider(create: (_) => DesignationsProvider()),
+        ChangeNotifierProvider(create: (_) => DepartmentsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -68,6 +90,54 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/admin/users',
           builder: (context, state) => const UsersScreen(),
+        ),
+        GoRoute(
+          path: '/admin/participants',
+          builder: (context, state) => const ParticipantsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/pages',
+          builder: (context, state) => const StaticPagesScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/dashboard',
+          builder: (context, state) => const TrainerDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/admin/logs',
+          builder: (context, state) => const ErrorLogsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/recycle',
+          builder: (context, state) => const RecycleBinScreen(),
+        ),
+        GoRoute(
+          path: '/participant/dashboard',
+          builder: (context, state) => const ParticipantDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/password',
+          builder: (context, state) => const ChangePasswordScreen(),
+        ),
+        GoRoute(
+          path: '/admin/impersonate',
+          builder: (context, state) => const ImpersonateScreen(),
+        ),
+        GoRoute(
+          path: '/admin/stores',
+          builder: (context, state) => const StoresScreen(),
+        ),
+        GoRoute(
+          path: '/admin/designations',
+          builder: (context, state) => const DesignationsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/departments',
+          builder: (context, state) => const DepartmentsScreen(),
         ),
       ],
     );

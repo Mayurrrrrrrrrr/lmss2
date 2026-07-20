@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/user_model.dart';
+import '../models/store_model.dart';
 
-class UsersProvider with ChangeNotifier {
+class StoresProvider with ChangeNotifier {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://lms2.yuktaa.com/api/v2/'));
 
-  UsersProvider() {
+  StoresProvider() {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final prefs = await SharedPreferences.getInstance();
@@ -20,38 +20,37 @@ class UsersProvider with ChangeNotifier {
   }
 
   
-  List<UserModel> _users = [];
+  List<StoreModel> _stores = [];
   bool _isLoading = false;
   String? _errorMessage;
 
-  List<UserModel> get users => _users;
+  List<StoreModel> get stores => _stores;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  Future<void> fetchUsers() async {
+  Future<void> fetchStores() async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final response = await _dio.get('/admin/users');
+      final response = await _dio.get('/admin/stores');
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['users'] ?? response.data;
-        _users = data.map((json) => UserModel.fromJson(json)).toList();
+        final List<dynamic> data = response.data['stores'] ?? response.data;
+        _stores = data.map((json) => StoreModel.fromJson(json)).toList();
       } else {
-        _errorMessage = 'Failed to load users. Status: ${response.statusCode}';
+        _errorMessage = 'Failed to load stores. Status: ${response.statusCode}';
       }
     } catch (e) {
-      _errorMessage = 'Failed to load users: $e';
+      _errorMessage = 'Failed to load stores: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  void deleteUser(int id) {
-    // Mock delete
-    _users.removeWhere((user) => user.id == id);
+  void deleteStore(int id) {
+    _stores.removeWhere((store) => store.id == id);
     notifyListeners();
   }
 }

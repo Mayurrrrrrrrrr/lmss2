@@ -10,9 +10,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _usernameError;
+  String? _passwordError;
 
   @override
   void dispose() {
@@ -22,7 +23,12 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _submit() async {
-    if (_formKey.currentState!.validate()) {
+    setState(() {
+      _usernameError = _usernameController.text.isEmpty ? 'Please enter your username' : null;
+      _passwordError = _passwordController.text.isEmpty ? 'Please enter your password' : null;
+    });
+
+    if (_usernameError == null && _passwordError == null) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
       final success = await authProvider.login(
@@ -35,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
           SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
         );
       }
-      // Routing is handled automatically by go_router redirect based on auth state
     }
   }
 
@@ -58,8 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(32.0),
-                  child: Form(
-                    key: _formKey,
+                  child: SizedBox(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -84,39 +88,31 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                         ),
                         const SizedBox(height: 32),
-                        TextFormField(
+                        TextField(
                           controller: _usernameController,
                           decoration: InputDecoration(
                             labelText: 'Username',
+                            errorText: _usernameError,
                             prefixIcon: const Icon(Icons.person_outline),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your username';
-                            }
-                            return null;
-                          },
+                          onSubmitted: (_) => _submit(),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
+                        TextField(
                           controller: _passwordController,
                           decoration: InputDecoration(
                             labelText: 'Password',
+                            errorText: _passwordError,
                             prefixIcon: const Icon(Icons.lock_outline),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            return null;
-                          },
+                          onSubmitted: (_) => _submit(),
                         ),
                         const SizedBox(height: 24),
                         SizedBox(

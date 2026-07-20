@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/admin_dashboard_response.dart';
 import '../models/login_response.dart';
+import '../models/participant_dashboard_response.dart';
+import '../models/trainer_dashboard_response.dart';
 
 class ApiService {
   late final Dio _dio;
@@ -53,6 +55,24 @@ class ApiService {
         throw Exception(e.response?.data['message'] ?? 'Login failed');
       }
       throw Exception('Network error occurred during login');
+    }
+  }
+
+  Future<ParticipantDashboardResponse> getParticipantDashboard() async {
+    try {
+      final response = await _dio.get('/participant/dashboard');
+      return ParticipantDashboardResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to load participant dashboard data: $e');
+    }
+  }
+
+  Future<TrainerDashboardResponse> getTrainerDashboard() async {
+    try {
+      final response = await _dio.get('/trainer/dashboard');
+      return TrainerDashboardResponse.fromJson(response.data);
+    } catch (e) {
+      throw Exception('Failed to load trainer dashboard data: $e');
     }
   }
 }
