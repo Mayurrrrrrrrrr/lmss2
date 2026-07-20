@@ -24,8 +24,8 @@ async def get_trainer_dashboard(
             SELECT COUNT(DISTINCT a.user_id)
             FROM assignments a
             JOIN courses c ON a.item_id = c.id AND a.item_type = 'course'
-            WHERE c.created_by = :uid
-        """, uid=current_user.id)
+            WHERE c.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         row = await cursor.fetchone()
         total_participants = row[0] if row else 0
 
@@ -35,8 +35,8 @@ async def get_trainer_dashboard(
             FROM assignments a
             JOIN courses c ON a.item_id = c.id AND a.item_type = 'course'
             JOIN users u ON a.user_id = u.id
-            WHERE c.created_by = :uid AND u.last_active >= SYSDATE - 30
-        """, uid=current_user.id)
+            WHERE c.created_by = :trainer_id AND u.last_active >= SYSDATE - 30
+        """, trainer_id=current_user.id)
         row = await cursor.fetchone()
         active_participants = row[0] if row else 0
 
@@ -45,8 +45,8 @@ async def get_trainer_dashboard(
             SELECT NVL(ROUND(AVG(CASE WHEN qa.total > 0 THEN (qa.score * 100.0 / qa.total) ELSE 0 END), 2), 0.0)
             FROM quiz_attempts qa
             JOIN quizzes q ON qa.quiz_id = q.id
-            WHERE q.created_by = :uid
-        """, uid=current_user.id)
+            WHERE q.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         row = await cursor.fetchone()
         average_score = row[0] if row else 0.0
 
@@ -59,9 +59,9 @@ async def get_trainer_dashboard(
                   SELECT DISTINCT a.user_id 
                   FROM assignments a 
                   JOIN courses c ON a.item_id = c.id AND a.item_type = 'course'
-                  WHERE c.created_by = :uid
+                  WHERE c.created_by = :trainer_id
               )
-        """, uid=current_user.id)
+        """, trainer_id=current_user.id)
         row = await cursor.fetchone()
         pending_evaluations = row[0] if row else 0
 
@@ -82,9 +82,9 @@ async def get_trainer_dashboard(
             FROM courses c
             LEFT JOIN assignments a ON a.item_id = c.id AND a.item_type = 'course'
             LEFT JOIN course_completions cc ON cc.course_id = c.id AND cc.user_id = a.user_id
-            WHERE c.created_by = :uid AND c.deleted_at IS NULL
+            WHERE c.created_by = :trainer_id AND c.deleted_at IS NULL
             GROUP BY c.id, c.title
-        """, uid=current_user.id)
+        """, trainer_id=current_user.id)
         assigned_courses_rows = await cursor.fetchall()
         assigned_courses = [
             AssignedCourse(
@@ -106,11 +106,11 @@ async def get_trainer_dashboard(
             FROM quizzes q
             LEFT JOIN modules m ON q.module_id = m.id
             LEFT JOIN courses c ON m.course_id = c.id
-            WHERE q.created_by = :uid 
+            WHERE q.created_by = :trainer_id 
               AND q.deleted_at IS NULL 
               AND q.scheduled_time >= CURRENT_TIMESTAMP
             ORDER BY q.scheduled_time ASC
-        """, uid=current_user.id)
+        """, trainer_id=current_user.id)
         upcoming_quizzes_rows = await cursor.fetchall()
         upcoming_quizzes = [
             UpcomingQuiz(
@@ -149,8 +149,8 @@ async def get_trainer_reports(
             LEFT JOIN modules m ON c.id = m.course_id
             LEFT JOIN chapters ch ON m.id = ch.module_id
             LEFT JOIN user_progress prog ON ch.id = prog.chapter_id AND prog.user_id = a.user_id
-            WHERE c.created_by = :uid
-        """, uid=current_user.id)
+            WHERE c.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         c_row = await cursor.fetchone()
         assigned = c_row[0] if c_row else 0
         tot_ch = c_row[1] if c_row else 0
@@ -166,8 +166,8 @@ async def get_trainer_reports(
             FROM assignments a
             JOIN quizzes q ON a.item_id = q.id AND a.item_type = 'quiz'
             LEFT JOIN quiz_attempts qa ON q.id = qa.quiz_id AND qa.user_id = a.user_id
-            WHERE q.created_by = :uid
-        """, uid=current_user.id)
+            WHERE q.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         q_row = await cursor.fetchone()
         q_assigned = q_row[0] if q_row else 0
         tot_score = q_row[1] if q_row else 0
@@ -210,8 +210,8 @@ async def get_trainer_ai_summary(
             LEFT JOIN modules m ON c.id = m.course_id
             LEFT JOIN chapters ch ON m.id = ch.module_id
             LEFT JOIN user_progress prog ON ch.id = prog.chapter_id AND prog.user_id = a.user_id
-            WHERE c.created_by = :uid
-        """, uid=current_user.id)
+            WHERE c.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         c_row = await cursor.fetchone()
         
         await cursor.execute("""
@@ -221,8 +221,8 @@ async def get_trainer_ai_summary(
             FROM assignments a
             JOIN quizzes q ON a.item_id = q.id AND a.item_type = 'quiz'
             LEFT JOIN quiz_attempts qa ON q.id = qa.quiz_id AND qa.user_id = a.user_id
-            WHERE q.created_by = :uid
-        """, uid=current_user.id)
+            WHERE q.created_by = :trainer_id
+        """, trainer_id=current_user.id)
         q_row = await cursor.fetchone()
         
     tot_ch = c_row[1] if c_row else 0

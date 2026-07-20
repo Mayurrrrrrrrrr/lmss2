@@ -1,6 +1,6 @@
 import aiosmtplib
 from email.message import EmailMessage
-from app.core.database import get_db
+from app.core.database import get_db_connection
 import logging
 
 logger = logging.getLogger(__name__)

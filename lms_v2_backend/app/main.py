@@ -10,6 +10,9 @@ from app.api.live_quiz import router as live_quiz_router
 from app.api.gamification import router as gamification_router
 from app.api.admin import router as admin_router
 from app.api.trainer import router as trainer_router
+from app.api.trainer_content import router as trainer_content_router
+from app.api.trainer_quizzes import router as trainer_quizzes_router
+from app.api.roleplays import router as roleplays_router
 from app.api.manager import router as manager_router
 from app.api.courses_read import router as courses_read_router
 from app.api.quizzes_read import router as quizzes_read_router
@@ -70,6 +73,9 @@ app.include_router(live_quiz_router, prefix="/api/v2/live", tags=["Live Quiz"])
 app.include_router(gamification_router, prefix="/api/v2/gamification", tags=["Gamification"])
 app.include_router(admin_router, prefix="/api/v2/admin", tags=["Admin"])
 app.include_router(trainer_router, prefix="/api/v2/trainer", tags=["Trainer"])
+app.include_router(trainer_content_router, prefix="/api/v2/trainer", tags=["Trainer Content"])
+app.include_router(trainer_quizzes_router, prefix="/api/v2/trainer", tags=["Trainer Quizzes"])
+app.include_router(roleplays_router, prefix="/api/v2", tags=["Roleplays"])
 app.include_router(manager_router, prefix="/api/v2/manager", tags=["Manager"])
 
 # Mobile App specific V2 endpoints

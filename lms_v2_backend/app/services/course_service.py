@@ -45,10 +45,7 @@ class CourseService:
             progress = req.progress
 
             if progress >= 95:
-                if content_type == 'html':
-                    now_completed = 1
-                    progress = 100
-                elif total_time_spent >= (duration_seconds * 0.6): # 60% min attention span
+                if total_time_spent >= (duration_seconds * 0.6): # 60% min attention span
                     now_completed = 1
                     progress = 100
                 else:
@@ -66,7 +63,7 @@ class CourseService:
                 WHEN MATCHED THEN
                     UPDATE SET 
                         progress_percent = :final_progress,
-                        time_spent_seconds = time_spent_seconds + :time_spent,
+                        time_spent_seconds = NVL(time_spent_seconds, 0) + :time_spent,
                         is_completed = :final_completed,
                         completed_at = CASE WHEN :now_completed = 1 AND completed_at IS NULL THEN CURRENT_TIMESTAMP ELSE completed_at END
                 WHEN NOT MATCHED THEN
