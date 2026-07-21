@@ -34,7 +34,13 @@ class StaticPagesProvider with ChangeNotifier {
 
     try {
       final response = await _dio.get('admin/pages');
-      final List<dynamic> data = response.data['pages'] ?? response.data;
+      final dynamic rawData = response.data;
+      List<dynamic> data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('pages')) {
+        data = rawData['pages'] as List;
+      }
       _pages = data.map((json) => StaticPageModel.fromJson(json)).toList();
     } catch (e) {
       _errorMessage = 'Failed to load static pages: $e';

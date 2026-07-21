@@ -206,14 +206,59 @@ async def get_participants(
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
+            SELECT u.id, u.username, p.full_name, u.role, u.created_at,
+                   p.store_code, p.city, p.designation, p.department,
+                   (SELECT COUNT(*) FROM user_profiles sub WHERE sub.reporting_manager_id = u.id) AS subordinate_count
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.role = 'participant'
+            WHERE u.role IN ('participant', 'area_manager')
             ORDER BY u.created_at DESC
         """)
         rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
+        return [
+            {
+                "id": r[0],
+                "username": r[1],
+                "full_name": r[2] or "",
+                "role": r[3],
+                "created_at": r[4],
+                "store_code": r[5] or "",
+                "city": r[6] or "",
+                "designation": r[7] or "",
+                "department": r[8] or "",
+                "subordinate_count": int(r[9] or 0)
+            }
+            for r in rows
+        ]
+
+@router.get("/team")
+async def get_team_members(
+    manager_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT u.id, u.username, p.full_name, u.role, p.store_code, p.city, p.designation, p.department
+            FROM users u
+            JOIN user_profiles p ON u.id = p.user_id
+            WHERE p.reporting_manager_id = :manager_id
+            ORDER BY p.full_name
+        """, manager_id=manager_id)
+        rows = await cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "username": r[1],
+                "full_name": r[2] or "",
+                "role": r[3],
+                "store_code": r[4] or "",
+                "city": r[5] or "",
+                "designation": r[6] or "",
+                "department": r[7] or ""
+            }
+            for r in rows
+        ]
 
 @router.get("/stores")
 async def get_stores(

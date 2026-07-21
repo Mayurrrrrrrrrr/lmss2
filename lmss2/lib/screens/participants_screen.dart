@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/participants_provider.dart';
 import '../models/participant.dart';
+import '../widgets/team_members_dialog.dart';
 
 class ParticipantsScreen extends StatefulWidget {
   const ParticipantsScreen({Key? key}) : super(key: key);
@@ -161,7 +162,13 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                                       children: [
                                         TextButton.icon(
                                           onPressed: () {
-                                            // View team
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => TeamMembersDialog(
+                                                managerId: p.id,
+                                                managerName: p.fullName.isNotEmpty ? p.fullName : p.username,
+                                              ),
+                                            );
                                           },
                                           icon: const Icon(Icons.people_outline, size: 18),
                                           label: Text('Team (${p.subordinateCount})'),
