@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/participant_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
+import 'package:go_router/go_router.dart';
 
 class ParticipantDashboardScreen extends StatefulWidget {
   const ParticipantDashboardScreen({super.key});
@@ -244,9 +245,7 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
   }
 
   void _continueCourse(EnrolledCourse course) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Continuing course: ${course.title}...')),
-    );
+    context.go('/participant/courses/${course.id}');
   }
 
   void _downloadCertificate(Certificate cert) {

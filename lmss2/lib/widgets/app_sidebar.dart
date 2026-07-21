@@ -40,6 +40,20 @@ class AppSidebar extends StatelessWidget {
           _buildSectionHeader('Main'),
           _buildListTile(context, Icons.dashboard, 'Home', '/dashboard', currentRoute),
 
+          if (role == 'participant' || role == 'area_manager') ...[
+            _buildSectionHeader('Learning'),
+            _buildListTile(context, Icons.menu_book, 'My Courses', '/participant/courses', currentRoute),
+            _buildListTile(context, Icons.video_camera_front, 'My Roleplays', '/participant/roleplays', currentRoute),
+          ],
+
+          if (role == 'trainer') ...[
+            _buildSectionHeader('Training'),
+            _buildListTile(context, Icons.school, 'Course Authoring', '/trainer/courses', currentRoute),
+            _buildListTile(context, Icons.assignment_ind, 'Course Assignments', '/trainer/assignments', currentRoute),
+            _buildListTile(context, Icons.quiz, 'Quiz Authoring', '/trainer/quizzes', currentRoute),
+            _buildListTile(context, Icons.video_camera_front, 'Roleplay Tracker', '/trainer/roleplays', currentRoute),
+          ],
+
           if (role == 'admin') ...[
             _buildSectionHeader('Management'),
             _buildListTile(context, Icons.group, 'Manage Users', '/admin/users', currentRoute),

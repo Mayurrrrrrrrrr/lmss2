@@ -24,7 +24,16 @@ import 'screens/recycle_bin_screen.dart';
 import 'screens/stores_screen.dart';
 import 'screens/designations_screen.dart';
 import 'screens/departments_screen.dart';
+import 'screens/courses_screen.dart';
+import 'screens/course_detail_screen.dart';
+import 'screens/trainer_courses_screen.dart';
+import 'screens/trainer_course_builder_screen.dart';
+import 'screens/trainer_assignments_screen.dart';
+import 'screens/trainer_quizzes_screen.dart';
+import 'screens/trainer_questions_screen.dart';
 import 'screens/diagnostics_screen.dart';
+import 'screens/trainer_roleplays_screen.dart';
+import 'screens/participant_roleplays_screen.dart';
 
 void main() {
   runApp(
@@ -82,7 +91,17 @@ class _MyAppState extends State<MyApp> {
         ),
         GoRoute(
           path: '/dashboard',
-          builder: (context, state) => const AdminDashboardScreen(),
+          builder: (context, state) {
+            switch (authProvider.role) {
+              case 'trainer':
+                return const TrainerDashboardScreen();
+              case 'participant':
+              case 'area_manager':
+                return const ParticipantDashboardScreen();
+              default:
+                return const AdminDashboardScreen();
+            }
+          },
         ),
         GoRoute(
           path: '/admin/dashboard',
@@ -105,6 +124,36 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const TrainerDashboardScreen(),
         ),
         GoRoute(
+          path: '/trainer/courses',
+          builder: (context, state) => const TrainerCoursesScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/courses/:courseId',
+          builder: (context, state) => TrainerCourseBuilderScreen(
+            courseId: int.parse(state.pathParameters['courseId']!),
+            title: state.uri.queryParameters['title'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: '/trainer/assignments',
+          builder: (context, state) => const TrainerAssignmentsScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/quizzes',
+          builder: (context, state) => const TrainerQuizzesScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/quizzes/:quizId',
+          builder: (context, state) => TrainerQuestionsScreen(
+            quizId: int.parse(state.pathParameters['quizId']!),
+            title: state.uri.queryParameters['title'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: '/trainer/roleplays',
+          builder: (context, state) => const TrainerRoleplaysScreen(),
+        ),
+        GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
         ),
@@ -115,6 +164,20 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/dashboard',
           builder: (context, state) => const ParticipantDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/participant/courses',
+          builder: (context, state) => const CoursesScreen(),
+        ),
+        GoRoute(
+          path: '/participant/courses/:courseId',
+          builder: (context, state) => CourseDetailScreen(
+            courseId: int.parse(state.pathParameters['courseId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/participant/roleplays',
+          builder: (context, state) => const ParticipantRoleplaysScreen(),
         ),
         GoRoute(
           path: '/profile',
