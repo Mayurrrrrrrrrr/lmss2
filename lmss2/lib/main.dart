@@ -48,6 +48,8 @@ import 'screens/trainer_booster_screen.dart';
 import 'screens/trainer_milestones_screen.dart';
 import 'screens/integrations_screen.dart';
 import 'screens/app_versions_screen.dart';
+import 'screens/trainer_live_screen.dart';
+import 'screens/participant_live_screen.dart';
 
 void main() {
   runApp(
@@ -190,6 +192,8 @@ class _MyAppState extends State<MyApp> {
         GoRoute(path:'/trainer/milestones',builder:(context,state)=>const TrainerMilestonesScreen()),
         GoRoute(path:'/trainer/integrations',builder:(context,state)=>const IntegrationsScreen()),
         GoRoute(path:'/trainer/app-versions',builder:(context,state)=>const AppVersionsScreen()),
+        GoRoute(path:'/trainer/live',builder:(context,state)=>const TrainerLiveScreen()),
+        GoRoute(path:'/trainer/live/:sessionId',builder:(context,state)=>LiveHostScreen(sessionId:int.parse(state.pathParameters['sessionId']!),report:state.uri.queryParameters['report']=='1')),
         GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
@@ -229,6 +233,8 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const NotificationsScreen(),
         ),
         GoRoute(path:'/participant/booster',builder:(context,state)=>const BrainBoosterScreen()),
+        GoRoute(path:'/participant/live',builder:(context,state)=>const ParticipantLiveJoinScreen()),
+        GoRoute(path:'/participant/live/:sessionId',builder:(context,state)=>ParticipantLiveScreen(sessionId:int.parse(state.pathParameters['sessionId']!))),
         GoRoute(
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),

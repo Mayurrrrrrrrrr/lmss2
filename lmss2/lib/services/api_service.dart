@@ -334,4 +334,16 @@ class ApiService {
   Future<Map<String,dynamic>> getAppVersions()async=>Map<String,dynamic>.from((await _dio.get('/trainer/app-versions')).data);
   Future<Map<String,dynamic>> getAppConfig()async=>Map<String,dynamic>.from((await _dio.get('/app-config')).data);
   Future<void> saveAppConfig(Map<String,dynamic> data)async=>_dio.put('/admin/app-config',data:data);
+  Future<Map<String,dynamic>> getLiveOptions() async => Map<String,dynamic>.from((await _dio.get('/live/trainer/options')).data);
+  Future<List<Map<String,dynamic>>> getLiveSessions() async => List<Map<String,dynamic>>.from((await _dio.get('/live/trainer/sessions')).data['sessions'] ?? const []);
+  Future<Map<String,dynamic>> startLiveSession(Map<String,dynamic> data) async => Map<String,dynamic>.from((await _dio.post('/live/trainer/sessions',data:data)).data);
+  Future<Map<String,dynamic>> getLiveHostState(int id) async => Map<String,dynamic>.from((await _dio.get('/live/trainer/sessions/$id')).data);
+  Future<void> openLiveQuestion(int id,int index) async => _dio.post('/live/trainer/sessions/$id/question',data:{'index':index});
+  Future<void> closeLiveQuestion(int id) async => _dio.post('/live/trainer/sessions/$id/close-question');
+  Future<void> closeLiveSession(int id) async => _dio.post('/live/trainer/sessions/$id/close');
+  Future<void> deleteLiveSession(int id) async => _dio.delete('/live/trainer/sessions/$id');
+  Future<Map<String,dynamic>> getLiveReport(int id) async => Map<String,dynamic>.from((await _dio.get('/live/trainer/sessions/$id/report')).data);
+  Future<Map<String,dynamic>> joinLiveSession(String code) async => Map<String,dynamic>.from((await _dio.post('/live/participant/join',data:{'access_code':code})).data);
+  Future<Map<String,dynamic>> getLiveParticipantState(int id) async => Map<String,dynamic>.from((await _dio.get('/live/participant/sessions/$id')).data);
+  Future<Map<String,dynamic>> submitLiveAnswer(int id,int questionId,int optionId) async => Map<String,dynamic>.from((await _dio.post('/live/participant/sessions/$id/answer',data:{'question_id':questionId,'option_id':optionId})).data);
 }

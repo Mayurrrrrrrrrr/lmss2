@@ -49,6 +49,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.emoji_events, 'Rewards & Achievements', '/participant/gamification', currentRoute),
             _buildListTile(context, Icons.notifications, 'Notifications', '/participant/notifications', currentRoute),
             _buildListTile(context, Icons.psychology, 'Daily Brain Booster', '/participant/booster', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Join Live Quiz', '/participant/live', currentRoute),
             if (effectiveRole == 'area_manager') _buildListTile(context, Icons.analytics, 'Team Reports', '/reports', currentRoute),
           ],
 
@@ -57,6 +58,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.school, 'Course Authoring', '/trainer/courses', currentRoute),
             _buildListTile(context, Icons.assignment_ind, 'Course Assignments', '/trainer/assignments', currentRoute),
             _buildListTile(context, Icons.quiz, 'Quiz Authoring', '/trainer/quizzes', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Live Quizzes', '/trainer/live', currentRoute),
             _buildListTile(context, Icons.video_camera_front, 'Roleplay Tracker', '/trainer/roleplays', currentRoute),
             _buildListTile(context, Icons.task, 'Operational Tasks', '/trainer/tasks', currentRoute),
             _buildListTile(context, Icons.emoji_events, 'Gamification', '/trainer/gamification', currentRoute),
@@ -65,6 +67,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.military_tech, 'Milestones & Kudos', '/trainer/milestones', currentRoute),
             _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
             _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Live Quizzes', '/trainer/live', currentRoute),
             _buildListTile(context, Icons.integration_instructions, 'Email & AI Settings', '/trainer/integrations', currentRoute),
           ],
 
