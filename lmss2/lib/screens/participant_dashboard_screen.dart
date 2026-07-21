@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/participant_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
+import '../widgets/course_viewer_dialog.dart';
+import '../widgets/quiz_runner_dialog.dart';
+import '../widgets/certificate_viewer_dialog.dart';
 
 class ParticipantDashboardScreen extends StatefulWidget {
   const ParticipantDashboardScreen({super.key});
@@ -238,20 +241,43 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
   }
 
   void _takeQuiz(EnrolledCourse course) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Starting quiz for ${course.title}...')),
-    );
+    showDialog(
+      context: context,
+      builder: (context) => QuizRunnerDialog(
+        quizId: int.tryParse(course.id) ?? 1,
+        quizTitle: '${course.title} Assessment Quiz',
+      ),
+    ).then((updated) {
+      if (updated == true) {
+        setState(() {
+          _dashboardFuture = _apiService.getParticipantDashboard();
+        });
+      }
+    });
   }
 
   void _continueCourse(EnrolledCourse course) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Continuing course: ${course.title}...')),
-    );
+    showDialog(
+      context: context,
+      builder: (context) => CourseViewerDialog(
+        courseId: int.tryParse(course.id) ?? 1,
+        courseTitle: course.title,
+      ),
+    ).then((_) {
+      setState(() {
+        _dashboardFuture = _apiService.getParticipantDashboard();
+      });
+    });
   }
 
   void _downloadCertificate(Certificate cert) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Downloading certificate for ${cert.courseTitle}...')),
+    showDialog(
+      context: context,
+      builder: (context) => CertificateViewerDialog(
+        courseTitle: cert.courseTitle,
+        learnerName: 'John Doe',
+        issueDate: cert.issueDate,
+      ),
     );
   }
 }
