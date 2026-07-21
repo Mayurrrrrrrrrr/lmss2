@@ -36,6 +36,10 @@ import 'screens/trainer_roleplays_screen.dart';
 import 'screens/participant_roleplays_screen.dart';
 import 'screens/trainer_tasks_screen.dart';
 import 'screens/participant_tasks_screen.dart';
+import 'screens/trainer_gamification_screen.dart';
+import 'screens/participant_gamification_screen.dart';
+import 'screens/certificate_screen.dart';
+import 'screens/certificate_config_screen.dart';
 
 void main() {
   runApp(
@@ -152,12 +156,23 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
         GoRoute(
+          path: '/trainer/courses/:courseId/certificate',
+          builder: (context, state) => CertificateConfigScreen(
+            courseId: int.parse(state.pathParameters['courseId']!),
+            courseTitle: state.uri.queryParameters['title'] ?? '',
+          ),
+        ),
+        GoRoute(
           path: '/trainer/roleplays',
           builder: (context, state) => const TrainerRoleplaysScreen(),
         ),
         GoRoute(
           path: '/trainer/tasks',
           builder: (context, state) => const TrainerTasksScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/gamification',
+          builder: (context, state) => const TrainerGamificationScreen(),
         ),
         GoRoute(
           path: '/admin/logs',
@@ -188,6 +203,14 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/tasks',
           builder: (context, state) => const ParticipantTasksScreen(),
+        ),
+        GoRoute(
+          path: '/participant/gamification',
+          builder: (context, state) => const ParticipantGamificationScreen(),
+        ),
+        GoRoute(
+          path: '/participant/certificates/:courseId',
+          builder: (context, state) => CertificateScreen(courseId: int.parse(state.pathParameters['courseId']!)),
         ),
         GoRoute(
           path: '/profile',

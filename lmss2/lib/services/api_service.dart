@@ -279,4 +279,34 @@ class ApiService {
       _dio.post('/tasks/$id/submit/photo', data: bytes, options: Options(contentType: contentType));
   String taskEvidenceUrl(int completionId) =>
       'https://lms2.yuktaa.com/api/v2/tasks/evidence/$completionId';
+
+  Future<Map<String, dynamic>> getTrainerGamification() async {
+    final results = await Future.wait([_dio.get('/trainer/badges'), _dio.get('/trainer/rewards'), _dio.get('/trainer/points-settings')]);
+    return {'badges': results[0].data['badges'], 'rewards': results[1].data['rewards'], 'redemptions': results[1].data['redemptions'], 'settings': results[2].data['settings']};
+  }
+  Future<void> saveBadge(Map<String, dynamic> data, [int? id]) async =>
+      id == null ? _dio.post('/trainer/badges', data: data) : _dio.put('/trainer/badges/$id', data: data);
+  Future<void> deleteBadge(int id) async => _dio.delete('/trainer/badges/$id');
+  Future<void> createReward(Map<String, dynamic> data) async => _dio.post('/trainer/rewards', data: data);
+  Future<void> deleteReward(int id) async => _dio.delete('/trainer/rewards/$id');
+  Future<void> updateRedemption(int id, String status) async =>
+      _dio.post('/trainer/redemptions/$id/status', data: {'status': status});
+  Future<void> updatePointsSettings(Map<String, String> settings) async =>
+      _dio.put('/trainer/points-settings', data: {'settings': settings});
+  Future<Map<String, dynamic>> getRewards() async => Map<String, dynamic>.from((await _dio.get('/rewards')).data);
+  Future<void> redeemReward(int id) async => _dio.post('/rewards/redeem', data: {'reward_id': id});
+  Future<List<Map<String, dynamic>>> getMyBadges() async =>
+      List<Map<String, dynamic>>.from((await _dio.get('/badges/mine')).data['badges'] ?? const []);
+  Future<Map<String, dynamic>> getLeaderboard({String type = 'individual', String season = 'month'}) async =>
+      Map<String, dynamic>.from((await _dio.get('/leaderboard', queryParameters: {'leaderboard_type': type, 'season': season})).data);
+  Future<List<Map<String, dynamic>>> getCertificates() async =>
+      List<Map<String, dynamic>>.from((await _dio.get('/certificates')).data['certificates'] ?? const []);
+  Future<Map<String, dynamic>> getCertificate(int courseId) async =>
+      Map<String, dynamic>.from((await _dio.get('/certificates/$courseId')).data);
+  Future<Map<String, dynamic>> getCertificateConfig(int courseId) async =>
+      Map<String, dynamic>.from((await _dio.get('/trainer/courses/$courseId/certificate-config')).data);
+  Future<void> saveCertificateConfig(int courseId, Map<String, dynamic> data) async =>
+      _dio.put('/trainer/courses/$courseId/certificate-config', data: data);
+  Future<void> resetCertificateConfig(int courseId) async =>
+      _dio.delete('/trainer/courses/$courseId/certificate-config');
 }
