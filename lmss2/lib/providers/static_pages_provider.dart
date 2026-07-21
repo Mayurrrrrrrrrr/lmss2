@@ -7,19 +7,11 @@ class StaticPagesProvider with ChangeNotifier {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://lms2.yuktaa.com/api/v2/'));
 
   StaticPagesProvider() {
-    _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
-      final token = (await SharedPreferences.getInstance()).getString('jwt_token');
-      if (token != null && token.isNotEmpty) options.headers['Authorization'] = 'Bearer $token';
-      handler.next(options);
-    }));
-  }
-  
-  StaticPagesProvider() {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final prefs = await SharedPreferences.getInstance();
         final token = prefs.getString('jwt_token');
-        if (token != null) {
+        if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
         }
         return handler.next(options);

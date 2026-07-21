@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import oracledb
 from app.core.security import require_user
 from app.core.database import get_db_connection
+from app.schemas.user import UserProfile
 
 router = APIRouter(prefix="/participant", tags=["Participant"])
 
