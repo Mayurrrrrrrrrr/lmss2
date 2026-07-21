@@ -260,4 +260,23 @@ class ApiService {
 
   Future<void> submitParticipantRoleplay(int id, String videoUrl, String remarks) async =>
       _dio.post('/roleplays/$id/submit', data: {'video_url': videoUrl, 'participant_remarks': remarks});
+
+  Future<Map<String, dynamic>> getTaskOptions() async =>
+      Map<String, dynamic>.from((await _dio.get('/trainer/task-options')).data);
+  Future<Map<String, dynamic>> getTrainerTasks() async =>
+      Map<String, dynamic>.from((await _dio.get('/trainer/tasks')).data);
+  Future<void> createTask(Map<String, dynamic> data) async => _dio.post('/trainer/tasks', data: data);
+  Future<void> deleteTask(int id) async => _dio.delete('/trainer/tasks/$id');
+  Future<void> reviewTaskCompletion(int id, String status) async =>
+      _dio.post('/trainer/task-completions/$id/review', data: {'status': status});
+  Future<List<Map<String, dynamic>>> getParticipantTasks() async {
+    final response = await _dio.get('/tasks/list');
+    return List<Map<String, dynamic>>.from(response.data['tasks'] ?? const []);
+  }
+  Future<void> submitTaskText(int id, String text) async =>
+      _dio.post('/tasks/$id/submit/text', data: {'text_response': text});
+  Future<void> submitTaskPhoto(int id, List<int> bytes, String contentType) async =>
+      _dio.post('/tasks/$id/submit/photo', data: bytes, options: Options(contentType: contentType));
+  String taskEvidenceUrl(int completionId) =>
+      'https://lms2.yuktaa.com/api/v2/tasks/evidence/$completionId';
 }

@@ -1,9 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/static_page_model.dart';
 
 class StaticPagesProvider with ChangeNotifier {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://lms2.yuktaa.com/api/v2/'));
+
+  StaticPagesProvider() {
+    _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
+      final token = (await SharedPreferences.getInstance()).getString('jwt_token');
+      if (token != null && token.isNotEmpty) options.headers['Authorization'] = 'Bearer $token';
+      handler.next(options);
+    }));
+  }
   
   List<StaticPageModel> _pages = [];
   bool _isLoading = false;
@@ -30,21 +39,18 @@ class StaticPagesProvider with ChangeNotifier {
     }
   }
 
-  void addPage(StaticPageModel page) {
-    _pages.add(page);
-    notifyListeners();
+  Future<void> addPage(StaticPageModel page) async {
+    await _dio.post('admin/pages', data: {'title': page.title, 'slug': page.slug, 'content': page.content, 'is_active': page.isActive});
+    await fetchPages();
   }
 
-  void updatePage(StaticPageModel updatedPage) {
-    final index = _pages.indexWhere((p) => p.id == updatedPage.id);
-    if (index != -1) {
-      _pages[index] = updatedPage;
-      notifyListeners();
-    }
+  Future<void> updatePage(StaticPageModel updatedPage) async {
+    await _dio.put('admin/pages/${updatedPage.id}', data: {'title': updatedPage.title, 'slug': updatedPage.slug, 'content': updatedPage.content, 'is_active': updatedPage.isActive});
+    await fetchPages();
   }
 
-  void deletePage(int id) {
-    _pages.removeWhere((page) => page.id == id);
-    notifyListeners();
+  Future<void> deletePage(int id) async {
+    await _dio.delete('admin/pages/$id');
+    await fetchPages();
   }
 }

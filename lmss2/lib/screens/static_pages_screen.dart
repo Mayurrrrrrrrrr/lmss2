@@ -288,7 +288,7 @@ class _StaticPagesScreenState extends State<StaticPagesScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     final newPage = StaticPageModel(
                       id: isEditing ? page.id : DateTime.now().millisecondsSinceEpoch, // Mock ID
                       title: titleController.text,
@@ -299,11 +299,12 @@ class _StaticPagesScreenState extends State<StaticPagesScreen> {
                     );
 
                     if (isEditing) {
-                      context.read<StaticPagesProvider>().updatePage(newPage);
+                      await context.read<StaticPagesProvider>().updatePage(newPage);
                     } else {
-                      context.read<StaticPagesProvider>().addPage(newPage);
+                      await context.read<StaticPagesProvider>().addPage(newPage);
                     }
 
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                     
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -334,8 +335,9 @@ class _StaticPagesScreenState extends State<StaticPagesScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                context.read<StaticPagesProvider>().deletePage(page.id);
+              onPressed: () async {
+                await context.read<StaticPagesProvider>().deletePage(page.id);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Page deleted')),

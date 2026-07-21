@@ -275,6 +275,39 @@ async def create_page(
         return {"success": True, "id": next_id}
 
 
+@router.put("/pages/{page_id}")
+async def update_page(
+    page_id: int,
+    page: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            UPDATE static_pages SET url_slug=:slug,title=:title,html_content=:content,is_public=:is_public
+            WHERE id=:page_id
+        """, slug=page.get("slug"), title=page.get("title"), content=page.get("content"),
+             is_public=1 if page.get("is_active", True) else 0, page_id=page_id)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Static page not found")
+        await conn.commit()
+        return {"success": True}
+
+
+@router.delete("/pages/{page_id}")
+async def delete_page(
+    page_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("DELETE FROM static_pages WHERE id=:page_id", page_id=page_id)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Static page not found")
+        await conn.commit()
+        return {"success": True}
+
+
 @router.get("/logs")
 async def get_logs(
     current_user: UserProfile = Depends(require_admin),

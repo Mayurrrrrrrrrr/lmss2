@@ -44,6 +44,7 @@ class AppSidebar extends StatelessWidget {
             _buildSectionHeader('Learning'),
             _buildListTile(context, Icons.menu_book, 'My Courses', '/participant/courses', currentRoute),
             _buildListTile(context, Icons.video_camera_front, 'My Roleplays', '/participant/roleplays', currentRoute),
+            _buildListTile(context, Icons.task_alt, 'My Tasks', '/participant/tasks', currentRoute),
           ],
 
           if (role == 'trainer') ...[
@@ -52,6 +53,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.assignment_ind, 'Course Assignments', '/trainer/assignments', currentRoute),
             _buildListTile(context, Icons.quiz, 'Quiz Authoring', '/trainer/quizzes', currentRoute),
             _buildListTile(context, Icons.video_camera_front, 'Roleplay Tracker', '/trainer/roleplays', currentRoute),
+            _buildListTile(context, Icons.task, 'Operational Tasks', '/trainer/tasks', currentRoute),
           ],
 
           if (role == 'admin') ...[

@@ -34,6 +34,8 @@ import 'screens/trainer_questions_screen.dart';
 import 'screens/diagnostics_screen.dart';
 import 'screens/trainer_roleplays_screen.dart';
 import 'screens/participant_roleplays_screen.dart';
+import 'screens/trainer_tasks_screen.dart';
+import 'screens/participant_tasks_screen.dart';
 
 void main() {
   runApp(
@@ -154,6 +156,10 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const TrainerRoleplaysScreen(),
         ),
         GoRoute(
+          path: '/trainer/tasks',
+          builder: (context, state) => const TrainerTasksScreen(),
+        ),
+        GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
         ),
@@ -178,6 +184,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/roleplays',
           builder: (context, state) => const ParticipantRoleplaysScreen(),
+        ),
+        GoRoute(
+          path: '/participant/tasks',
+          builder: (context, state) => const ParticipantTasksScreen(),
         ),
         GoRoute(
           path: '/profile',
