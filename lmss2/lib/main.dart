@@ -40,6 +40,8 @@ import 'screens/trainer_gamification_screen.dart';
 import 'screens/participant_gamification_screen.dart';
 import 'screens/certificate_screen.dart';
 import 'screens/certificate_config_screen.dart';
+import 'screens/trainer_notifications_screen.dart';
+import 'screens/notifications_screen.dart';
 
 void main() {
   runApp(
@@ -175,6 +177,10 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const TrainerGamificationScreen(),
         ),
         GoRoute(
+          path: '/trainer/notifications',
+          builder: (context, state) => const TrainerNotificationsScreen(),
+        ),
+        GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
         ),
@@ -207,6 +213,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/gamification',
           builder: (context, state) => const ParticipantGamificationScreen(),
+        ),
+        GoRoute(
+          path: '/participant/notifications',
+          builder: (context, state) => const NotificationsScreen(),
         ),
         GoRoute(
           path: '/participant/certificates/:courseId',

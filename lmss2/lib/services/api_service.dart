@@ -309,4 +309,10 @@ class ApiService {
       _dio.put('/trainer/courses/$courseId/certificate-config', data: data);
   Future<void> resetCertificateConfig(int courseId) async =>
       _dio.delete('/trainer/courses/$courseId/certificate-config');
+  Future<Map<String, dynamic>> getNotificationOptions() async => Map<String, dynamic>.from((await _dio.get('/trainer/notification-options')).data);
+  Future<List<Map<String, dynamic>>> getSentNotifications() async => List<Map<String, dynamic>>.from((await _dio.get('/trainer/notifications')).data['history'] ?? const []);
+  Future<Map<String, dynamic>> sendNotification(Map<String, dynamic> data) async => Map<String, dynamic>.from((await _dio.post('/trainer/notifications', data: data)).data);
+  Future<void> nudgeAssignment(int id) async => _dio.post('/trainer/assignments/$id/nudge');
+  Future<Map<String, dynamic>> getNotifications() async => Map<String, dynamic>.from((await _dio.get('/notifications')).data);
+  Future<void> markNotificationRead({int? id, bool all = false}) async => _dio.post('/notifications/read', data: {'id': id, 'all': all});
 }
