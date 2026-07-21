@@ -5,6 +5,7 @@ import '../widgets/app_sidebar.dart';
 import '../widgets/course_viewer_dialog.dart';
 import '../widgets/quiz_runner_dialog.dart';
 import '../widgets/certificate_viewer_dialog.dart';
+import 'package:go_router/go_router.dart';
 
 class ParticipantDashboardScreen extends StatefulWidget {
   const ParticipantDashboardScreen({super.key});

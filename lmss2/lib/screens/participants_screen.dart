@@ -25,7 +25,6 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final provider = context.watch<ParticipantsProvider>();
     
     final filteredParticipants = provider.participants.where((p) {

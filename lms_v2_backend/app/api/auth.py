@@ -26,6 +26,11 @@ async def login(
     
     # This will raise HTTPExceptions on failure/lockout
     user_profile = await user_service.authenticate_user(login_data, client_ip)
+    is_browser = "mozilla" in request.headers.get("user-agent", "").lower()
+    if login_data.app_version and user_profile.role == "participant" and not is_browser:
+        async with conn.cursor() as cursor:
+            await cursor.execute("UPDATE user_profiles SET android_app_version=:version,last_app_ping=SYSTIMESTAMP WHERE user_id=:user_id", version=login_data.app_version, user_id=user_profile.id)
+            await conn.commit()
     
     # Generate stateless JWT token
     access_token = create_access_token(data={"sub": str(user_profile.id)})

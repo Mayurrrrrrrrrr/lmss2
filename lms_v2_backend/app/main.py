@@ -16,6 +16,13 @@ from app.api.trainer import router as trainer_router
 from app.api.trainer_content import router as trainer_content_router
 from app.api.trainer_quizzes import router as trainer_quizzes_router
 from app.api.roleplays import router as roleplays_router
+from app.api.tasks import router as tasks_router
+from app.api.portal_gamification import router as portal_gamification_router
+from app.api.notifications import router as notifications_router
+from app.api.reports import router as reports_router
+from app.api.configuration import router as configuration_router
+from app.api.ai_tools import router as ai_tools_router
+from app.api.utilities import router as utilities_router
 from app.api.manager import router as manager_router
 from app.api.courses_read import router as courses_read_router
 from app.api.quizzes_read import router as quizzes_read_router
@@ -97,6 +104,13 @@ app.include_router(trainer_router, prefix="/api/v2/trainer", tags=["Trainer"])
 app.include_router(trainer_content_router, prefix="/api/v2/trainer", tags=["Trainer Content"])
 app.include_router(trainer_quizzes_router, prefix="/api/v2/trainer", tags=["Trainer Quizzes"])
 app.include_router(roleplays_router, prefix="/api/v2", tags=["Roleplays"])
+app.include_router(tasks_router, prefix="/api/v2", tags=["Operational Tasks"])
+app.include_router(portal_gamification_router, prefix="/api/v2", tags=["Portal Gamification"])
+app.include_router(notifications_router, prefix="/api/v2", tags=["Notifications"])
+app.include_router(reports_router, prefix="/api/v2", tags=["Reports"])
+app.include_router(configuration_router, prefix="/api/v2", tags=["Configuration"])
+app.include_router(ai_tools_router, prefix="/api/v2/ai", tags=["AI Tools"])
+app.include_router(utilities_router, prefix="/api/v2", tags=["Utilities"])
 app.include_router(manager_router, prefix="/api/v2/manager", tags=["Manager"])
 
 app.include_router(participant_router, prefix="/api/v2", tags=["Participant (Mobile)"])

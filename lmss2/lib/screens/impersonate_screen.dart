@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../providers/users_provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/app_sidebar.dart';
 
 class ImpersonateScreen extends StatefulWidget {

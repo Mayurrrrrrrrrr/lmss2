@@ -40,25 +40,14 @@ class GamificationService:
             
             # 2. Award standard Points for the Booster Completion
             points_query = """
-                INSERT INTO point_transactions (user_id, point_type, amount, description, created_at)
-                VALUES (:user_id, 'daily_booster', 45, 'Completed Daily Brain Booster', CURRENT_TIMESTAMP)
+                INSERT INTO xp_transactions (user_id, type, points, description, created_at)
+                SELECT :user_id, 'daily_booster', 45, 'Completed Daily Brain Booster', CURRENT_TIMESTAMP
+                FROM dual WHERE NOT EXISTS (
+                    SELECT 1 FROM xp_transactions
+                    WHERE user_id=:user_id AND type='daily_booster' AND created_at>=TRUNC(SYSDATE)
+                )
             """
             await cursor.execute(points_query, user_id=user_id)
-
-            # 3. Synchronize Wallet Balance
-            update_balance = """
-                MERGE INTO point_balances pb
-                USING (SELECT :user_id AS user_id FROM dual) src
-                ON (pb.user_id = src.user_id)
-                WHEN MATCHED THEN
-                    UPDATE SET 
-                        balance = balance + 45, 
-                        total_earned = total_earned + 45
-                WHEN NOT MATCHED THEN
-                    INSERT (user_id, balance, total_earned) 
-                    VALUES (:user_id, 45, 45)
-            """
-            await cursor.execute(update_balance, user_id=user_id)
 
             await self.conn.commit()
 
