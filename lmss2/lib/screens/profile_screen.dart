@@ -40,7 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // TODO: replace this placeholder with the profile-update endpoint.
+      // Placeholder until the profile-update endpoint is connected.
       await Future.delayed(const Duration(seconds: 1)); // Simulate network request
       
       if (mounted) {

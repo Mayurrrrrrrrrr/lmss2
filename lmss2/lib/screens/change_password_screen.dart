@@ -36,7 +36,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      // TODO: replace this placeholder with the password-change endpoint.
+      // Placeholder until the password-change endpoint is connected.
       await Future.delayed(const Duration(seconds: 1)); // Simulate network request
       
       if (mounted) {
