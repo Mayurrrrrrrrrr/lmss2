@@ -236,7 +236,7 @@ async def host_state(session_id: int, user: UserProfile = Depends(require_host),
         if 0 < current <= len(questions):
             await cursor.execute("""
                 SELECT o.id,o.text,COUNT(a.id) FROM options o
-                LEFT JOIN live_session_answers a ON a.selected_option_id=o.id AND a.session_id=:session_id
+                LEFT JOIN live_session_answers a ON a.option_id=o.id AND a.session_id=:session_id
                 WHERE o.question_id=:question_id GROUP BY o.id,o.text ORDER BY o.id
             """, session_id=session_id, question_id=questions[current - 1]["id"])
             distribution = [{"option_id": int(row[0]), "text": row[1], "count": int(row[2])} for row in await cursor.fetchall()]
@@ -294,7 +294,7 @@ async def session_report(session_id: int, user: UserProfile = Depends(require_ho
         session = await _owned_session(cursor, session_id, user)
         questions = await _session_questions(cursor, session["quiz_id"], reveal_answers=True)
         await cursor.execute("""
-            SELECT a.user_id,a.question_id,a.selected_option_id,a.is_correct,a.time_taken,a.points_earned
+            SELECT a.user_id,a.question_id,a.option_id,a.is_correct,a.time_taken,a.points_earned
             FROM live_session_answers a WHERE a.session_id=:session_id ORDER BY a.user_id,a.question_id
         """, session_id=session_id)
         keys = ["user_id", "question_id", "selected_option_id", "is_correct", "time_taken", "points_earned"]
@@ -349,7 +349,7 @@ async def participant_state(session_id: int, user: UserProfile = Depends(require
         answer = None
         if question:
             await cursor.execute("""
-                SELECT selected_option_id,is_correct,points_earned,time_taken FROM live_session_answers
+                SELECT option_id,is_correct,points_earned,time_taken FROM live_session_answers
                 WHERE session_id=:session_id AND user_id=:user_id AND question_id=:question_id
             """, session_id=session_id, user_id=user.id, question_id=question["id"])
             answer_row = await cursor.fetchone()
@@ -395,7 +395,7 @@ async def submit_answer(session_id: int, body: AnswerInput, user: UserProfile = 
         correct = bool(option[1]) and elapsed <= limit
         points = max(500, int(1000 * (1 - elapsed / (2 * limit)))) if correct else 0
         await cursor.execute("""
-            INSERT INTO live_session_answers(session_id,user_id,question_id,selected_option_id,is_correct,time_taken,points_earned)
+            INSERT INTO live_session_answers(session_id,user_id,question_id,option_id,is_correct,time_taken,points_earned)
             VALUES(:session_id,:user_id,:question_id,:option_id,:is_correct,:time_taken,:points)
         """, session_id=session_id, user_id=user.id, question_id=body.question_id, option_id=body.option_id,
              is_correct=int(correct), time_taken=elapsed, points=points)

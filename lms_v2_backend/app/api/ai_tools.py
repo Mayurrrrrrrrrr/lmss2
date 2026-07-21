@@ -83,7 +83,7 @@ async def _owned_quiz(cursor, quiz_id: int, user: UserProfile):
 
 
 async def _permitted_participant(cursor, participant_id: int, user: UserProfile):
-    await cursor.execute("SELECT id,username,NVL(up.full_name,NVL(u.full_name,u.username)),up.store_code FROM users u LEFT JOIN user_profiles up ON up.user_id=u.id WHERE u.id=:user_id AND LOWER(u.role)='participant'", user_id=participant_id)
+    await cursor.execute("SELECT u.id,u.username,NVL(up.full_name,NVL(u.full_name,u.username)),up.store_code FROM users u LEFT JOIN user_profiles up ON up.user_id=u.id WHERE u.id=:user_id AND LOWER(u.role)='participant'", user_id=participant_id)
     row = await cursor.fetchone()
     if not row:
         raise HTTPException(404, "Participant not found")
@@ -122,7 +122,7 @@ async def ai_options(user: UserProfile = Depends(require_ai_trainer), conn=Depen
         quiz_sql += " ORDER BY title"
         await cursor.execute(quiz_sql, params)
         quizzes = [{"id": int(row[0]), "title": row[1]} for row in await cursor.fetchall()]
-        await cursor.execute("SELECT id,username,NVL(up.full_name,NVL(u.full_name,u.username)),up.store_code FROM users u LEFT JOIN user_profiles up ON up.user_id=u.id WHERE LOWER(u.role)='participant' ORDER BY NVL(up.full_name,NVL(u.full_name,u.username))")
+        await cursor.execute("SELECT u.id,u.username,NVL(up.full_name,NVL(u.full_name,u.username)),up.store_code FROM users u LEFT JOIN user_profiles up ON up.user_id=u.id WHERE LOWER(u.role)='participant' ORDER BY NVL(up.full_name,NVL(u.full_name,u.username))")
         participants = [{"id": int(row[0]), "username": row[1], "full_name": row[2], "store_code": row[3]} for row in await cursor.fetchall()]
         if user.role != "admin":
             permitted = []
