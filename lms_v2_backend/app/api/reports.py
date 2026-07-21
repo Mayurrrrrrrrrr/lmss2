@@ -25,8 +25,9 @@ async def _visible_ids(cursor, user: UserProfile) -> set[int]:
         await cursor.execute("""SELECT DISTINCT a.user_id FROM assignments a
                               LEFT JOIN courses c ON a.item_type='course' AND c.id=a.item_id
                               LEFT JOIN quizzes q ON a.item_type='quiz' AND q.id=a.item_id
-                              WHERE c.created_by=:owner OR q.created_by=:owner""", owner=user.id)
-    return {int(row[0]) for row in await cursor.fetchall()}
+                              WHERE a.user_id IS NOT NULL
+                                AND (c.created_by=:owner OR q.created_by=:owner)""", owner=user.id)
+    return {int(row[0]) for row in await cursor.fetchall() if row[0] is not None}
 
 def _id_clause(ids: set[int]):
     params = {f"uid_{i}": value for i, value in enumerate(sorted(ids))}
