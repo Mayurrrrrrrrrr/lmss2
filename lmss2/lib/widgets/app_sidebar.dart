@@ -64,6 +64,8 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.psychology, 'Brain Booster', '/trainer/booster', currentRoute),
             _buildListTile(context, Icons.military_tech, 'Milestones & Kudos', '/trainer/milestones', currentRoute),
             _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
+            _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
+            _buildListTile(context, Icons.integration_instructions, 'Email & AI Settings', '/trainer/integrations', currentRoute),
           ],
 
           if (effectiveRole == 'admin') ...[
@@ -71,6 +73,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.group, 'Manage Users', '/admin/users', currentRoute),
             _buildListTile(context, Icons.people, 'Participants', '/admin/participants', currentRoute),
             _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
+            _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
             _buildListTile(context, Icons.pages, 'Static Pages', '/admin/pages', currentRoute),
 
             _buildSectionHeader('Masters'),

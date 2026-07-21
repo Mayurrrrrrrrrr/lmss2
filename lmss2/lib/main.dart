@@ -46,6 +46,8 @@ import 'screens/reports_screen.dart';
 import 'screens/brain_booster_screen.dart';
 import 'screens/trainer_booster_screen.dart';
 import 'screens/trainer_milestones_screen.dart';
+import 'screens/integrations_screen.dart';
+import 'screens/app_versions_screen.dart';
 
 void main() {
   runApp(
@@ -186,6 +188,8 @@ class _MyAppState extends State<MyApp> {
         ),
         GoRoute(path:'/trainer/booster',builder:(context,state)=>const TrainerBoosterScreen()),
         GoRoute(path:'/trainer/milestones',builder:(context,state)=>const TrainerMilestonesScreen()),
+        GoRoute(path:'/trainer/integrations',builder:(context,state)=>const IntegrationsScreen()),
+        GoRoute(path:'/trainer/app-versions',builder:(context,state)=>const AppVersionsScreen()),
         GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),

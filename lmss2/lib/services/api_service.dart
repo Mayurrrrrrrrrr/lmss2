@@ -329,4 +329,9 @@ class ApiService {
   Future<void> createMilestone(Map<String,dynamic> data)async=>_dio.post('/trainer/milestones',data:data);
   Future<void> deleteMilestone(int id)async=>_dio.delete('/trainer/milestones/$id');
   Future<void> awardKudos(int userId,int points,String description)async=>_dio.post('/trainer/kudos',data:{'user_id':userId,'points':points,'description':description});
+  Future<Map<String,dynamic>> getIntegrations()async=>Map<String,dynamic>.from((await _dio.get('/trainer/integrations')).data);
+  Future<void> saveIntegrations(Map<String,dynamic> data)async=>_dio.post('/trainer/integrations',data:data);
+  Future<Map<String,dynamic>> getAppVersions()async=>Map<String,dynamic>.from((await _dio.get('/trainer/app-versions')).data);
+  Future<Map<String,dynamic>> getAppConfig()async=>Map<String,dynamic>.from((await _dio.get('/app-config')).data);
+  Future<void> saveAppConfig(Map<String,dynamic> data)async=>_dio.put('/admin/app-config',data:data);
 }
