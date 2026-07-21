@@ -43,6 +43,9 @@ import 'screens/certificate_config_screen.dart';
 import 'screens/trainer_notifications_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/reports_screen.dart';
+import 'screens/brain_booster_screen.dart';
+import 'screens/trainer_booster_screen.dart';
+import 'screens/trainer_milestones_screen.dart';
 
 void main() {
   runApp(
@@ -181,6 +184,8 @@ class _MyAppState extends State<MyApp> {
           path: '/trainer/notifications',
           builder: (context, state) => const TrainerNotificationsScreen(),
         ),
+        GoRoute(path:'/trainer/booster',builder:(context,state)=>const TrainerBoosterScreen()),
+        GoRoute(path:'/trainer/milestones',builder:(context,state)=>const TrainerMilestonesScreen()),
         GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
@@ -219,6 +224,7 @@ class _MyAppState extends State<MyApp> {
           path: '/participant/notifications',
           builder: (context, state) => const NotificationsScreen(),
         ),
+        GoRoute(path:'/participant/booster',builder:(context,state)=>const BrainBoosterScreen()),
         GoRoute(
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),

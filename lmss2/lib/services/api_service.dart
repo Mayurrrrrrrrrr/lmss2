@@ -318,4 +318,15 @@ class ApiService {
   Future<Map<String, dynamic>> getReportOptions() async => Map<String, dynamic>.from((await _dio.get('/reports/options')).data);
   Future<Map<String, dynamic>> getReports({required DateTime from, required DateTime to, String? store, String? city, String? manager, int? courseId}) async =>
       Map<String, dynamic>.from((await _dio.get('/reports', queryParameters: {'date_from': from.toIso8601String().substring(0,10), 'date_to': to.toIso8601String().substring(0,10), if(store!=null&&store.isNotEmpty)'store_code':store, if(city!=null&&city.isNotEmpty)'city':city, if(manager!=null&&manager.isNotEmpty)'manager_name':manager, if(courseId!=null)'course_id':courseId})).data);
+  Future<Map<String,dynamic>> getDailyBooster() async=>Map<String,dynamic>.from((await _dio.get('/daily-booster')).data);
+  Future<Map<String,dynamic>> submitDailyBooster(Map<int,int> answers) async=>Map<String,dynamic>.from((await _dio.post('/daily-booster',data:{'answers':answers.map((k,v)=>MapEntry(k.toString(),v))})).data);
+  Future<Map<String,dynamic>> getTrainerBooster() async=>Map<String,dynamic>.from((await _dio.get('/trainer/booster')).data);
+  Future<void> createBoosterQuestion(Map<String,dynamic> data)async=>_dio.post('/trainer/booster/questions',data:data);
+  Future<void> deleteBoosterQuestion(int id)async=>_dio.delete('/trainer/booster/questions/$id');
+  Future<void> linkBoosterQuiz(int id)async=>_dio.post('/trainer/booster/quizzes/$id');
+  Future<void> unlinkBoosterQuiz(int id)async=>_dio.delete('/trainer/booster/quizzes/$id');
+  Future<Map<String,dynamic>> getMilestonesKudos()async=>Map<String,dynamic>.from((await _dio.get('/trainer/milestones-kudos')).data);
+  Future<void> createMilestone(Map<String,dynamic> data)async=>_dio.post('/trainer/milestones',data:data);
+  Future<void> deleteMilestone(int id)async=>_dio.delete('/trainer/milestones/$id');
+  Future<void> awardKudos(int userId,int points,String description)async=>_dio.post('/trainer/kudos',data:{'user_id':userId,'points':points,'description':description});
 }
