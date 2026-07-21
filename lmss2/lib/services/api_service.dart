@@ -346,4 +346,15 @@ class ApiService {
   Future<Map<String,dynamic>> joinLiveSession(String code) async => Map<String,dynamic>.from((await _dio.post('/live/participant/join',data:{'access_code':code})).data);
   Future<Map<String,dynamic>> getLiveParticipantState(int id) async => Map<String,dynamic>.from((await _dio.get('/live/participant/sessions/$id')).data);
   Future<Map<String,dynamic>> submitLiveAnswer(int id,int questionId,int optionId) async => Map<String,dynamic>.from((await _dio.post('/live/participant/sessions/$id/answer',data:{'question_id':questionId,'option_id':optionId})).data);
+  Future<Map<String,dynamic>> getAiOptions() async=>Map<String,dynamic>.from((await _dio.get('/ai/trainer/options')).data);
+  Future<String> generateCourseDescription(String title,String audience) async=>(await _dio.post('/ai/trainer/course-description',data:{'title':title,'audience':audience})).data['description'].toString();
+  Future<Map<String,dynamic>> generateAiQuestions(int quizId,int count,{bool save=false}) async=>Map<String,dynamic>.from((await _dio.post('/ai/trainer/questions',data:{'quiz_id':quizId,'count':count,'save':save})).data);
+  Future<Map<String,dynamic>> tagAiDifficulty(int quizId) async=>Map<String,dynamic>.from((await _dio.post('/ai/trainer/tag-difficulty',data:{'quiz_id':quizId})).data);
+  Future<Map<String,dynamic>> getAiRisk(int userId) async=>Map<String,dynamic>.from((await _dio.post('/ai/trainer/risk-score',data:{'user_id':userId})).data);
+  Future<Map<String,dynamic>> getKnowledgeGaps({int? userId,String? storeCode}) async=>Map<String,dynamic>.from((await _dio.post('/ai/trainer/knowledge-gaps',data:{'user_id':userId,'store_code':storeCode})).data);
+  Future<Map<String,dynamic>> createAiNudge(int userId,String context,{bool send=false}) async=>Map<String,dynamic>.from((await _dio.post('/ai/trainer/nudge',data:{'user_id':userId,'context':context,'send_notification':send})).data);
+  Future<Map<String,dynamic>> getAiRecommendations() async=>Map<String,dynamic>.from((await _dio.get('/ai/participant/recommendations')).data);
+  Future<String> askAi(int chapterId,String question) async=>(await _dio.post('/ai/participant/ask',data:{'chapter_id':chapterId,'question':question})).data['answer'].toString();
+  Future<Map<String,dynamic>> getAiTakeaways(int chapterId) async=>Map<String,dynamic>.from((await _dio.post('/ai/participant/takeaways',data:{'chapter_id':chapterId})).data);
+  Future<Map<String,dynamic>> getAiHints(int attemptId) async=>Map<String,dynamic>.from((await _dio.post('/ai/participant/hints',data:{'attempt_id':attemptId})).data);
 }

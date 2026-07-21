@@ -24,6 +24,37 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   void _reload() => setState(() => _course = _api.getCourseDetail(widget.courseId));
 
+  Future<void> _askAi(CourseChapter chapter) async {
+    final question = TextEditingController();
+    final value = await showDialog<String>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text('Ask about ${chapter.title}'),
+      content: TextField(controller: question, maxLength: 500, maxLines: 4, autofocus: true,
+        decoration: const InputDecoration(labelText: 'Your question', border: OutlineInputBorder())),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, question.text.trim()), child: const Text('Ask'))],
+    ));
+    question.dispose();
+    if (value == null || value.isEmpty) return;
+    try {
+      final answer = await _api.askAi(chapter.id, value);
+      if (!mounted) return;
+      await showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(title: const Text('Learning assistant'), content: SelectableText(answer), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))]));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('AI answer unavailable: $error')));
+    }
+  }
+
+  Future<void> _takeaways(CourseChapter chapter) async {
+    try {
+      final result = await _api.getAiTakeaways(chapter.id);
+      final items = List<dynamic>.from(result['takeaways'] ?? const []);
+      if (!mounted) return;
+      await showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(title: Text('${chapter.title}: key takeaways'), content: SizedBox(width: 600, child: ListView(shrinkWrap: true, children: items.map((item) => ListTile(leading: const Icon(Icons.check_circle_outline), title: Text(item.toString()))).toList())), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))]));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Takeaways unavailable: $error')));
+    }
+  }
+
   Future<void> _openChapter(CourseChapter chapter) async {
     final started = DateTime.now();
     final content = await _api.getChapterContent(chapter.id);
@@ -43,7 +74,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
             ),
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+        actions: [TextButton.icon(onPressed: () { Navigator.pop(context); _takeaways(chapter); }, icon: const Icon(Icons.summarize), label: const Text('Key takeaways')), TextButton.icon(onPressed: () { Navigator.pop(context); _askAi(chapter); }, icon: const Icon(Icons.auto_awesome), label: const Text('Ask AI')), TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
       ),
     );
     final elapsed = DateTime.now().difference(started).inSeconds;
