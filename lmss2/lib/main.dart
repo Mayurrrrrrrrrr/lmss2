@@ -42,6 +42,7 @@ import 'screens/certificate_screen.dart';
 import 'screens/certificate_config_screen.dart';
 import 'screens/trainer_notifications_screen.dart';
 import 'screens/notifications_screen.dart';
+import 'screens/reports_screen.dart';
 
 void main() {
   runApp(
@@ -217,6 +218,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/notifications',
           builder: (context, state) => const NotificationsScreen(),
+        ),
+        GoRoute(
+          path: '/reports',
+          builder: (context, state) => const ReportsScreen(),
         ),
         GoRoute(
           path: '/participant/certificates/:courseId',

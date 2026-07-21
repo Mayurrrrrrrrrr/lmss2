@@ -315,4 +315,7 @@ class ApiService {
   Future<void> nudgeAssignment(int id) async => _dio.post('/trainer/assignments/$id/nudge');
   Future<Map<String, dynamic>> getNotifications() async => Map<String, dynamic>.from((await _dio.get('/notifications')).data);
   Future<void> markNotificationRead({int? id, bool all = false}) async => _dio.post('/notifications/read', data: {'id': id, 'all': all});
+  Future<Map<String, dynamic>> getReportOptions() async => Map<String, dynamic>.from((await _dio.get('/reports/options')).data);
+  Future<Map<String, dynamic>> getReports({required DateTime from, required DateTime to, String? store, String? city, String? manager, int? courseId}) async =>
+      Map<String, dynamic>.from((await _dio.get('/reports', queryParameters: {'date_from': from.toIso8601String().substring(0,10), 'date_to': to.toIso8601String().substring(0,10), if(store!=null&&store.isNotEmpty)'store_code':store, if(city!=null&&city.isNotEmpty)'city':city, if(manager!=null&&manager.isNotEmpty)'manager_name':manager, if(courseId!=null)'course_id':courseId})).data);
 }
