@@ -25,7 +25,63 @@ class _TrainerLiveScreenState extends State<TrainerLiveScreen>{
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Could not start session: $e')));}
   }
   Future<void> remove(int id)async{await api.deleteLiveSession(id);await load();}
-  @override Widget build(BuildContext context)=>Scaffold(drawer:const AppSidebar(role:'trainer'),appBar:AppBar(title:const Text('Live Quizzes'),actions:[IconButton(onPressed:load,icon:const Icon(Icons.refresh)),IconButton(onPressed:create,icon:const Icon(Icons.add))]),floatingActionButton:FloatingActionButton.extended(onPressed:create,icon:const Icon(Icons.play_arrow),label:const Text('Start session')),body:loading?const Center(child:CircularProgressIndicator()):error!=null?Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Text(error!,style:const TextStyle(color:Colors.red)),const SizedBox(height:12),FilledButton(onPressed:load,child:const Text('Retry'))])):sessions.isEmpty?const Center(child:Text('No live sessions yet. Start one when your learners are ready.')):ListView.builder(padding:const EdgeInsets.all(16),itemCount:sessions.length,itemBuilder:(_,i){final s=sessions[i];final active=s['status'].toString().toLowerCase()=='active';return Card(child:ListTile(leading:CircleAvatar(child:Icon(active?Icons.wifi_tethering:Icons.check)),title:Text(s['quiz_title']?.toString()??'Quiz'),subtitle:Text('Code ${s['access_code']} • ${s['participant_count']??0} joined • ${active?'Active':'Closed'}'),onTap:()=>context.go('/trainer/live/${s['id']}'),trailing:PopupMenuButton<String>(onSelected:(v)async{if(v=='report')context.go('/trainer/live/${s['id']}?report=1');if(v=='delete')await remove(s['id'] as int);},itemBuilder:(_)=>const[PopupMenuItem(value:'report',child:Text('View report')),PopupMenuItem(value:'delete',child:Text('Delete'))])));}}));
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        drawer: const AppSidebar(role: 'trainer'),
+        appBar: AppBar(
+          title: const Text('Live Quizzes'),
+          actions: [
+            IconButton(onPressed: load, icon: const Icon(Icons.refresh)),
+            IconButton(onPressed: create, icon: const Icon(Icons.add)),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: create,
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Start session'),
+        ),
+        body: loading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(error!, style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 12),
+                        FilledButton(onPressed: load, child: const Text('Retry')),
+                      ],
+                    ),
+                  )
+                : sessions.isEmpty
+                    ? const Center(child: Text('No live sessions yet. Start one when your learners are ready.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: sessions.length,
+                        itemBuilder: (_, index) {
+                          final session = sessions[index];
+                          final active = session['status'].toString().toLowerCase() == 'active';
+                          return Card(
+                            child: ListTile(
+                              leading: CircleAvatar(child: Icon(active ? Icons.wifi_tethering : Icons.check)),
+                              title: Text(session['quiz_title']?.toString() ?? 'Quiz'),
+                              subtitle: Text("Code ${session['access_code']} • ${session['participant_count'] ?? 0} joined • ${active ? 'Active' : 'Closed'}"),
+                              onTap: () => context.go('/trainer/live/${session['id']}'),
+                              trailing: PopupMenuButton<String>(
+                                onSelected: (value) async {
+                                  if (value == 'report') context.go('/trainer/live/${session['id']}?report=1');
+                                  if (value == 'delete') await remove(session['id'] as int);
+                                },
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'report', child: Text('View report')),
+                                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+      );
 }
 
 class _StartLiveDialog extends StatefulWidget{final Map<String,dynamic> options;const _StartLiveDialog({required this.options});@override State<_StartLiveDialog> createState()=>_StartLiveDialogState();}
