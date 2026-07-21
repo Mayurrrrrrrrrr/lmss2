@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:typed_data';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/admin_dashboard_response.dart';
 import '../models/login_response.dart';
@@ -357,4 +358,10 @@ class ApiService {
   Future<String> askAi(int chapterId,String question) async=>(await _dio.post('/ai/participant/ask',data:{'chapter_id':chapterId,'question':question})).data['answer'].toString();
   Future<Map<String,dynamic>> getAiTakeaways(int chapterId) async=>Map<String,dynamic>.from((await _dio.post('/ai/participant/takeaways',data:{'chapter_id':chapterId})).data);
   Future<Map<String,dynamic>> getAiHints(int attemptId) async=>Map<String,dynamic>.from((await _dio.post('/ai/participant/hints',data:{'attempt_id':attemptId})).data);
+  Future<List<int>> exportQuizQuestions(int quizId) async=>List<int>.from((await _dio.get('/trainer/quizzes/$quizId/questions/export',options:Options(responseType:ResponseType.bytes))).data);
+  Future<Map<String,dynamic>> importQuizQuestions(int quizId,List<int> bytes) async=>Map<String,dynamic>.from((await _dio.post('/trainer/quizzes/$quizId/questions/import',data:Uint8List.fromList(bytes),options:Options(contentType:'text/csv'))).data);
+  Future<List<int>> exportReportCsv({required String type,required DateTime from,required DateTime to,String? store,String? city,String? manager,int? courseId}) async=>List<int>.from((await _dio.get('/reports/export',queryParameters:{'report_type':type,'date_from':from.toIso8601String().substring(0,10),'date_to':to.toIso8601String().substring(0,10),if(store!=null&&store.isNotEmpty)'store_code':store,if(city!=null&&city.isNotEmpty)'city':city,if(manager!=null&&manager.isNotEmpty)'manager_name':manager,if(courseId!=null)'course_id':courseId},options:Options(responseType:ResponseType.bytes))).data);
+  Future<List<Map<String,dynamic>>> searchParticipantContent(String query) async=>List<Map<String,dynamic>>.from((await _dio.get('/participant/search',queryParameters:{'q':query})).data['results']??const[]);
+  Future<List<Map<String,dynamic>>> getPublicPages() async=>List<Map<String,dynamic>>.from((await _dio.get('/participant/pages')).data['pages']??const[]);
+  Future<Map<String,dynamic>> getPublicPage(String slug) async=>Map<String,dynamic>.from((await _dio.get('/participant/pages/$slug')).data);
 }

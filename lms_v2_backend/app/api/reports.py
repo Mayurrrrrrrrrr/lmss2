@@ -1,5 +1,9 @@
-from datetime import date, timedelta
+import csv
+import io
+from datetime import date, datetime, timedelta
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from app.core.database import get_db_connection
 from app.core.security import get_current_user
 from app.schemas.user import UserProfile
@@ -113,3 +117,30 @@ async def reports(
                  "course_assignments":len(courses),"course_completions":sum(1 for r in courses if r["status"]=="Completed"),
                  "quiz_attempts":sum(1 for r in quizzes if r["status"]=="Attempted"),"roleplays_completed":sum(1 for r in roleplays if str(r["status"]).lower()=="completed")}
         return {"summary":summary,"courses":courses,"quizzes":quizzes,"roleplays":roleplays,"users":users}
+
+
+@router.get("/reports/export")
+async def export_report(
+    report_type: Literal["courses", "quizzes", "roleplays", "users"],
+    date_from: date = Query(default_factory=lambda: date.today()-timedelta(days=30)),
+    date_to: date = Query(default_factory=date.today), store_code: str | None = None, city: str | None = None,
+    manager_name: str | None = None, course_id: int | None = None,
+    user: UserProfile = Depends(require_report_viewer), conn=Depends(get_db_connection)
+):
+    data = await reports(date_from=date_from, date_to=date_to, store_code=store_code, city=city,
+                         manager_name=manager_name, course_id=course_id, user=user, conn=conn)
+    rows = data[report_type]
+    preferred = {
+        "courses": ["course_title", "full_name", "username", "store_code", "city", "manager_name", "assigned_date", "deadline_date", "completed_chapters", "total_chapters", "progress_percent", "status", "last_activity"],
+        "quizzes": ["quiz_title", "full_name", "username", "store_code", "city", "manager_name", "score", "total", "percentage", "status", "start_time", "end_time"],
+        "roleplays": ["scenario_topic", "week_no", "day", "full_name", "store_code", "city", "manager_name", "status", "observer_score", "created_at", "participant_remarks", "debrief_notes"],
+        "users": ["full_name", "username", "store_code", "city", "manager_name", "last_active", "last_login", "login_count"],
+    }[report_type]
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=preferred, extrasaction="ignore")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: value.isoformat() if isinstance(value, (date, datetime)) else ("" if value is None else value) for key, value in row.items()})
+    filename = f"{report_type}_{date_from.isoformat()}_{date_to.isoformat()}.csv"
+    return StreamingResponse(iter([(u"\ufeff" + output.getvalue()).encode("utf-8")]), media_type="text/csv; charset=utf-8",
+                             headers={"Content-Disposition": f'attachment; filename="{filename}"'})

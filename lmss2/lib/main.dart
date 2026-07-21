@@ -52,6 +52,8 @@ import 'screens/trainer_live_screen.dart';
 import 'screens/participant_live_screen.dart';
 import 'screens/trainer_ai_tools_screen.dart';
 import 'screens/participant_ai_tools_screen.dart';
+import 'screens/app_config_screen.dart';
+import 'screens/participant_content_screen.dart';
 
 void main() {
   runApp(
@@ -239,6 +241,7 @@ class _MyAppState extends State<MyApp> {
         GoRoute(path:'/participant/live',builder:(context,state)=>const ParticipantLiveJoinScreen()),
         GoRoute(path:'/participant/live/:sessionId',builder:(context,state)=>ParticipantLiveScreen(sessionId:int.parse(state.pathParameters['sessionId']!))),
         GoRoute(path:'/participant/ai-tools',builder:(context,state)=>const ParticipantAiToolsScreen()),
+        GoRoute(path:'/participant/content',builder:(context,state)=>const ParticipantContentScreen()),
         GoRoute(
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),
@@ -275,6 +278,7 @@ class _MyAppState extends State<MyApp> {
           path: '/admin/diagnostics',
           builder: (context, state) => const DiagnosticsScreen(),
         ),
+        GoRoute(path:'/admin/app-config',builder:(context,state)=>const AppConfigScreen()),
       ],
     );
   }

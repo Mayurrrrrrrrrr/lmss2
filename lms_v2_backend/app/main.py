@@ -19,6 +19,7 @@ from app.api.notifications import router as notifications_router
 from app.api.reports import router as reports_router
 from app.api.configuration import router as configuration_router
 from app.api.ai_tools import router as ai_tools_router
+from app.api.utilities import router as utilities_router
 from app.api.manager import router as manager_router
 from app.api.courses_read import router as courses_read_router
 from app.api.quizzes_read import router as quizzes_read_router
@@ -88,6 +89,7 @@ app.include_router(notifications_router, prefix="/api/v2", tags=["Notifications"
 app.include_router(reports_router, prefix="/api/v2", tags=["Reports"])
 app.include_router(configuration_router, prefix="/api/v2", tags=["Configuration"])
 app.include_router(ai_tools_router, prefix="/api/v2/ai", tags=["AI Tools"])
+app.include_router(utilities_router, prefix="/api/v2", tags=["Utilities"])
 app.include_router(manager_router, prefix="/api/v2/manager", tags=["Manager"])
 
 # Mobile App specific V2 endpoints

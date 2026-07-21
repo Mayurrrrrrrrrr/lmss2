@@ -51,6 +51,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.psychology, 'Daily Brain Booster', '/participant/booster', currentRoute),
             _buildListTile(context, Icons.wifi_tethering, 'Join Live Quiz', '/participant/live', currentRoute),
             _buildListTile(context, Icons.auto_awesome, 'AI Learning Assistant', '/participant/ai-tools', currentRoute),
+            _buildListTile(context, Icons.search, 'Search & Information', '/participant/content', currentRoute),
             if (effectiveRole == 'area_manager') _buildListTile(context, Icons.analytics, 'Team Reports', '/reports', currentRoute),
           ],
 
@@ -78,6 +79,7 @@ class AppSidebar extends StatelessWidget {
             _buildListTile(context, Icons.people, 'Participants', '/admin/participants', currentRoute),
             _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
             _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
+            _buildListTile(context, Icons.settings_cell, 'Mobile App Configuration', '/admin/app-config', currentRoute),
             _buildListTile(context, Icons.wifi_tethering, 'Live Quizzes', '/trainer/live', currentRoute),
             _buildListTile(context, Icons.auto_awesome, 'AI Toolkit', '/trainer/ai-tools', currentRoute),
             _buildListTile(context, Icons.pages, 'Static Pages', '/admin/pages', currentRoute),
