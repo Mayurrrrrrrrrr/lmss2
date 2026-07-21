@@ -378,7 +378,10 @@ async def submit_answer(session_id: int, body: AnswerInput, user: UserProfile = 
         await cursor.execute("""
             SELECT q.id,o.is_correct FROM questions q JOIN options o ON o.question_id=q.id
             WHERE q.id=:question_id AND o.id=:option_id AND q.quiz_id=:quiz_id AND q.deleted_at IS NULL
-              AND (SELECT COUNT(*) FROM questions prior WHERE prior.quiz_id=q.quiz_id AND prior.deleted_at IS NULL AND prior.id<=q.id)=:current_index
+              AND (SELECT COUNT(*) FROM questions prior_question
+                   WHERE prior_question.quiz_id=q.quiz_id
+                     AND prior_question.deleted_at IS NULL
+                     AND prior_question.id<=q.id)=:current_index
         """, question_id=body.question_id, option_id=body.option_id, quiz_id=session[0], current_index=session[1])
         option = await cursor.fetchone()
         if not option:
