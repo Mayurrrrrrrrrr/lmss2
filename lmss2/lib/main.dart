@@ -25,6 +25,7 @@ import 'screens/stores_screen.dart';
 import 'screens/designations_screen.dart';
 import 'screens/departments_screen.dart';
 import 'screens/diagnostics_screen.dart';
+import 'screens/public_static_page_screen.dart';
 
 void main() {
   runApp(
@@ -64,8 +65,9 @@ class _MyAppState extends State<MyApp> {
       redirect: (context, state) {
         final isAuthenticated = authProvider.isAuthenticated;
         final isLoginRoute = state.matchedLocation == '/';
+        final isPublicPage = state.matchedLocation.startsWith('/pages/');
 
-        if (!isAuthenticated && !isLoginRoute) {
+        if (!isAuthenticated && !isLoginRoute && !isPublicPage) {
           return '/';
         }
 
@@ -76,6 +78,13 @@ class _MyAppState extends State<MyApp> {
         return null;
       },
       routes: [
+        GoRoute(
+          path: '/pages/:slug',
+          builder: (context, state) {
+            final slug = state.pathParameters['slug'] ?? '';
+            return PublicStaticPageScreen(slug: slug);
+          },
+        ),
         GoRoute(
           path: '/',
           builder: (context, state) => const LoginScreen(),

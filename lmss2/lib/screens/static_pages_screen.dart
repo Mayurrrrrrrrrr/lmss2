@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/static_page_model.dart';
 import '../providers/static_pages_provider.dart';
 import '../widgets/app_sidebar.dart';
+import '../widgets/static_page_viewer_dialog.dart';
 
 class StaticPagesScreen extends StatefulWidget {
   const StaticPagesScreen({super.key});
@@ -202,6 +203,18 @@ class _StaticPagesScreenState extends State<StaticPagesScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        Tooltip(
+          message: 'Preview Live Page',
+          child: IconButton(
+            icon: const Icon(Icons.visibility, color: Colors.green),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => StaticPageViewerDialog(page: page),
+              );
+            },
+          ),
+        ),
         Tooltip(
           message: 'Edit Page',
           child: IconButton(

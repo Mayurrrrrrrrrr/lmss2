@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/participants_provider.dart';
 import '../models/participant.dart';
 import '../widgets/team_members_dialog.dart';
+import '../widgets/edit_participant_dialog.dart';
 
 class ParticipantsScreen extends StatefulWidget {
   const ParticipantsScreen({Key? key}) : super(key: key);
@@ -179,7 +180,14 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                                         ),
                                         TextButton.icon(
                                           onPressed: () {
-                                            // Edit
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => EditParticipantDialog(participant: p),
+                                            ).then((updated) {
+                                              if (updated == true) {
+                                                context.read<ParticipantsProvider>().fetchParticipants();
+                                              }
+                                            });
                                           },
                                           icon: const Icon(Icons.edit_outlined, size: 18),
                                           label: const Text('Edit'),
