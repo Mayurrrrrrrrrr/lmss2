@@ -74,17 +74,7 @@ class WebSocketManager:
         if db_pool:
             async with db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    # Upsert session state to active
-                    await cursor.execute("""
-                        MERGE INTO live_quiz_sessions s
-                        USING (SELECT :room_id as session_id FROM dual) d
-                        ON (s.session_id = d.session_id)
-                        WHEN MATCHED THEN
-                            UPDATE SET status = 'active', updated_at = CURRENT_TIMESTAMP
-                        WHEN NOT MATCHED THEN
-                            INSERT (session_id, status, created_at)
-                            VALUES (d.session_id, 'active', CURRENT_TIMESTAMP)
-                    """, room_id=room_id)
+                    await cursor.execute("UPDATE live_quiz_sessions SET status='active' WHERE id=:room_id", room_id=int(room_id))
                     await conn.commit()
 
     async def close_room(self, room_id: str, db_pool=None):
@@ -104,9 +94,9 @@ class WebSocketManager:
                 async with conn.cursor() as cursor:
                     await cursor.execute("""
                         UPDATE live_quiz_sessions 
-                        SET status = 'closed', updated_at = CURRENT_TIMESTAMP 
-                        WHERE session_id = :room_id
-                    """, room_id=room_id)
+                        SET status = 'closed'
+                        WHERE id = :room_id
+                    """, room_id=int(room_id))
                     await conn.commit()
 
     async def hydrate_rooms(self, db_pool):
@@ -117,10 +107,10 @@ class WebSocketManager:
         try:
             async with db_pool.acquire() as conn:
                 async with conn.cursor() as cursor:
-                    await cursor.execute("SELECT session_id FROM live_quiz_sessions WHERE status = 'active'")
+                    await cursor.execute("SELECT id FROM live_quiz_sessions WHERE status = 'active'")
                     rows = await cursor.fetchall()
                     for row in rows:
-                        room_id = row[0]
+                        room_id = str(row[0])
                         if room_id not in self.rooms:
                             self.rooms[room_id] = {}
         except Exception as e:
