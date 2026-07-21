@@ -184,68 +184,6 @@ async def get_departments(
             for r in rows
         ]}
 
-@router.get("/users")
-async def get_users(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
-            FROM users u
-            LEFT JOIN user_profiles p ON u.id = p.user_id
-            ORDER BY u.created_at DESC
-        """)
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
-
-@router.get("/participants")
-async def get_participants(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
-            FROM users u
-            LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.role = 'participant'
-            ORDER BY u.created_at DESC
-        """)
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
-
-@router.get("/stores")
-async def get_stores(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, store_code, store_name, state, city, created_at FROM stores ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "store_code": r[1], "store_name": r[2], "state": r[3], "city": r[4], "created_at": r[5]} for r in rows]
-
-@router.get("/designations")
-async def get_designations(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, designation_name, created_at FROM designations ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
-
-@router.get("/departments")
-async def get_departments(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, department_name, created_at FROM departments ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
-
-
 @router.get("/pages")
 async def get_pages(
     current_user: UserProfile = Depends(require_admin),

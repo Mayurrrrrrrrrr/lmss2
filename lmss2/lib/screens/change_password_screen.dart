@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_sidebar.dart';
-import 'package:dio/dio.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -37,9 +36,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      // Mock API call with Dio
-      final dio = Dio();
-      // await dio.post('https://lms2.yuktaa.com/api/v2/auth/change-password', data: {...});
+      // TODO: replace this placeholder with the password-change endpoint.
       await Future.delayed(const Duration(seconds: 1)); // Simulate network request
       
       if (mounted) {

@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_sidebar.dart';
-import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import 'package:dio/dio.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,9 +19,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // Assuming authProvider has a user object, or we just mock data
-    final authProvider = context.read<AuthProvider>();
-    
     _nameController = TextEditingController(text: 'Admin User');
     _emailController = TextEditingController(text: 'admin@yuktaa.com');
     _phoneController = TextEditingController(text: '+1234567890');
@@ -46,9 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // Mock API call with Dio
-      final dio = Dio();
-      // await dio.put('https://lms2.yuktaa.com/api/v2/auth/profile', data: {...});
+      // TODO: replace this placeholder with the profile-update endpoint.
       await Future.delayed(const Duration(seconds: 1)); // Simulate network request
       
       if (mounted) {
