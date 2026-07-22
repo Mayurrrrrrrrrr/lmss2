@@ -71,3 +71,4 @@ class _ParticipantQuizzesScreenState extends State<ParticipantQuizzesScreen> {
           },
         ),
       );
+}
