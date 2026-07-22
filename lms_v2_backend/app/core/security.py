@@ -53,11 +53,22 @@ async def get_current_user(
         # If user is deleted or role changed
         raise credentials_exception
 
-async def require_user(current_user: UserProfile = Depends(get_current_user)) -> int:
+async def require_user(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
     """
-    Dependency that ensures a user is authenticated and returns their ID.
+    Dependency that ensures a user is authenticated and returns their profile.
     """
-    return current_user.id
+    return current_user
+
+async def require_admin(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
+    """
+    RBAC Dependency: Validates that the active user is an Admin.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requires admin privileges."
+        )
+    return current_user
 
 async def require_trainer_or_admin(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
     """

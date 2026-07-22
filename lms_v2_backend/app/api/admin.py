@@ -1,109 +1,74 @@
+import psutil
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Any
 import oracledb
+from app.core.security import require_admin
 from app.core.database import get_db_connection
-from app.core.security import get_current_user
+import app.core.database as db
 from app.schemas.user import UserProfile
-from app.schemas.admin import AdminDashboardResponse, DashboardStats, RecentLogin, RecentPage
 
 router = APIRouter()
 
-async def require_admin(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
-    """
-    Strict RBAC for Admin-only routes.
-    """
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requires administrator privileges."
-        )
-    return current_user
-
-@router.get("/dashboard", response_model=AdminDashboardResponse)
-async def get_admin_dashboard(
+@router.get("/dashboard")
+async def get_dashboard(
     current_user: UserProfile = Depends(require_admin),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    """
-    Replaces /admin/dashboard.php.
-    Returns optimized metric summaries using unified SQL queries instead of 
-    multiple standalone COUNT() executions like the legacy PHP script.
-    """
+) -> Any:
     async with conn.cursor() as cursor:
-        # 1. Unified User Stats Query (Replaces 6 separate PHP queries!)
-        await cursor.execute("""
-            SELECT 
-                COUNT(*) as total_users,
-                COUNT(CASE WHEN role = 'trainer' THEN 1 END) as total_trainers,
-                COUNT(CASE WHEN role = 'participant' THEN 1 END) as total_participants,
-                COUNT(CASE WHEN created_at > TRUNC(SYSDATE) - 7 THEN 1 END) as new_users,
-                COUNT(CASE WHEN role = 'trainer' AND created_at > TRUNC(SYSDATE) - 7 THEN 1 END) as new_trainers,
-                COUNT(CASE WHEN role = 'participant' AND created_at > TRUNC(SYSDATE) - 7 THEN 1 END) as new_participants
-            FROM users
-        """)
-        u_stats = await cursor.fetchone()
-        
-        # 2. Unified Course Stats Query (Replaces 2 PHP queries)
-        await cursor.execute("""
-            SELECT 
-                COUNT(*) as total_courses,
-                COUNT(CASE WHEN created_at > TRUNC(SYSDATE) - 7 THEN 1 END) as new_courses
-            FROM courses
-        """)
-        c_stats = await cursor.fetchone()
-        
-        # 3. Unified Pages Stats Query (Replaces 2 PHP queries)
-        await cursor.execute("""
-            SELECT 
-                COUNT(*) as total_pages,
-                COUNT(CASE WHEN created_at > TRUNC(SYSDATE) - 7 THEN 1 END) as new_pages
-            FROM static_pages
-        """)
-        p_stats = await cursor.fetchone()
+        await cursor.execute("SELECT COUNT(*) FROM users")
+        total_users = (await cursor.fetchone())[0]
 
-        stats = DashboardStats(
-            total_users=u_stats[0] if u_stats else 0,
-            total_trainers=u_stats[1] if u_stats else 0,
-            total_participants=u_stats[2] if u_stats else 0,
-            new_users=u_stats[3] if u_stats else 0,
-            new_trainers=u_stats[4] if u_stats else 0,
-            new_participants=u_stats[5] if u_stats else 0,
-            total_courses=c_stats[0] if c_stats else 0,
-            new_courses=c_stats[1] if c_stats else 0,
-            total_pages=p_stats[0] if p_stats else 0,
-            new_pages=p_stats[1] if p_stats else 0
-        )
+        await cursor.execute("SELECT COUNT(*) FROM users WHERE created_at >= TRUNC(SYSDATE, 'MM')")
+        new_users_month = (await cursor.fetchone())[0]
 
-        # 4. Fetch Recent Logins
+        await cursor.execute("SELECT COUNT(*) FROM courses WHERE deleted_at IS NULL")
+        total_courses = (await cursor.fetchone())[0]
+
+        await cursor.execute("SELECT COUNT(*) FROM quizzes WHERE deleted_at IS NULL")
+        total_quizzes = (await cursor.fetchone())[0]
+
+        await cursor.execute("SELECT COUNT(*) FROM stores")
+        total_stores = (await cursor.fetchone())[0]
+
+        await cursor.execute("SELECT COUNT(*) FROM designations")
+        total_designations = (await cursor.fetchone())[0]
+
+        await cursor.execute("SELECT COUNT(*) FROM departments")
+        total_departments = (await cursor.fetchone())[0]
+
+        await cursor.execute("SELECT COUNT(*) FROM user_badges")
+        total_certificates = (await cursor.fetchone())[0]
+
         await cursor.execute("""
-            SELECT u.username, u.role, ll.login_time
-            FROM login_logs ll
-            JOIN users u ON ll.user_id = u.id
-            ORDER BY ll.login_time DESC
-            FETCH FIRST 5 ROWS ONLY
+            SELECT u.username, p.full_name, u.role, u.last_active
+            FROM users u
+            LEFT JOIN user_profiles p ON u.id = p.user_id
+            WHERE u.last_active IS NOT NULL
+            ORDER BY u.last_active DESC
+            FETCH FIRST 10 ROWS ONLY
         """)
         login_rows = await cursor.fetchall()
         recent_logins = [
-            RecentLogin(username=r[0], role=r[1], login_time=r[2]) for r in login_rows
+            {
+                "username": r[0],
+                "full_name": r[1] or r[0],
+                "role": r[2],
+                "login_time": r[3]
+            }
+            for r in login_rows
         ]
 
-        # 5. Fetch Recent Pages
-        await cursor.execute("""
-            SELECT id, title, url_slug, created_at 
-            FROM static_pages 
-            ORDER BY created_at DESC 
-            FETCH FIRST 6 ROWS ONLY
-        """)
-        page_rows = await cursor.fetchall()
-        recent_pages = [
-            RecentPage(id=r[0], title=r[1], url_slug=r[2], created_at=r[3]) for r in page_rows
-        ]
-
-    return AdminDashboardResponse(
-        success=True,
-        stats=stats,
-        recent_logins=recent_logins,
-        recent_pages=recent_pages
-    )
+        return {
+            "total_users": total_users,
+            "new_users_month": new_users_month,
+            "total_courses": total_courses,
+            "total_quizzes": total_quizzes,
+            "total_stores": total_stores,
+            "total_designations": total_designations,
+            "total_departments": total_departments,
+            "total_certificates": total_certificates,
+            "recent_logins": recent_logins
+        }
 
 @router.get("/users")
 async def get_users(
@@ -118,10 +83,7 @@ async def get_users(
             ORDER BY u.created_at DESC
         """)
         rows = await cursor.fetchall()
-        return {"success": True, "users": [
-            {"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]}
-            for r in rows
-        ]}
+        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
 
 @router.get("/participants")
 async def get_participants(
@@ -147,7 +109,68 @@ async def get_participants(
                 "department": r[8] or "", "subordinate_count": int(r[9] or 0)
             }
             for r in rows
-        ]}
+        ]
+
+@router.post("/participants/update")
+async def update_participant(
+    payload: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    user_id = payload.get("id")
+    full_name = payload.get("full_name")
+    store_code = payload.get("store_code")
+    city = payload.get("city")
+    designation = payload.get("designation")
+    department = payload.get("department")
+    role = payload.get("role", "participant")
+
+    async with conn.cursor() as cursor:
+        if role:
+            await cursor.execute("UPDATE users SET role = :role WHERE id = :id", role=role, id=user_id)
+            
+        await cursor.execute("""
+            MERGE INTO user_profiles p
+            USING (SELECT :user_id AS user_id FROM dual) src
+            ON (p.user_id = src.user_id)
+            WHEN MATCHED THEN
+                UPDATE SET full_name = :full_name, store_code = :store_code, city = :city, designation = :designation, department = :department
+            WHEN NOT MATCHED THEN
+                INSERT (user_id, full_name, store_code, city, designation, department)
+                VALUES (:user_id, :full_name, :store_code, :city, :designation, :department)
+        """, user_id=user_id, full_name=full_name, store_code=store_code, city=city, designation=designation, department=department)
+        
+        await conn.commit()
+        return {"success": True, "message": "Participant profile updated successfully"}
+
+@router.get("/team")
+async def get_team_members(
+    manager_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT u.id, u.username, p.full_name, u.role, p.store_code, p.city, p.designation, p.department
+            FROM users u
+            JOIN user_profiles p ON u.id = p.user_id
+            WHERE p.reporting_manager_id = :manager_id
+            ORDER BY p.full_name
+        """, manager_id=manager_id)
+        rows = await cursor.fetchall()
+        return [
+            {
+                "id": r[0],
+                "username": r[1],
+                "full_name": r[2] or "",
+                "role": r[3],
+                "store_code": r[4] or "",
+                "city": r[5] or "",
+                "designation": r[6] or "",
+                "department": r[7] or ""
+            }
+            for r in rows
+        ]
 
 @router.put("/participants/{user_id}")
 async def update_participant(
@@ -207,15 +230,9 @@ async def get_stores(
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, store_code, store_name, city, created_at FROM stores ORDER BY id")
+        await cursor.execute("SELECT id, store_code, store_name, city FROM stores ORDER BY id")
         rows = await cursor.fetchall()
-        return {"success": True, "stores": [
-            {
-                "id": r[0], "store_code": r[1], "store_name": r[2],
-                "city": r[3], "location": r[3], "created_at": r[4]
-            }
-            for r in rows
-        ]}
+        return [{"id": r[0], "code": r[1], "name": r[2], "city": r[3]} for r in rows]
 
 @router.get("/designations")
 async def get_designations(
@@ -223,12 +240,9 @@ async def get_designations(
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, designation_name, created_at FROM designations ORDER BY id")
+        await cursor.execute("SELECT id, title, department FROM designations ORDER BY id")
         rows = await cursor.fetchall()
-        return {"success": True, "designations": [
-            {"id": r[0], "designation_name": r[1], "name": r[1], "created_at": r[2]}
-            for r in rows
-        ]}
+        return [{"id": r[0], "title": r[1], "department": r[2]} for r in rows]
 
 @router.get("/departments")
 async def get_departments(
@@ -236,12 +250,9 @@ async def get_departments(
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, department_name, created_at FROM departments ORDER BY id")
+        await cursor.execute("SELECT id, name FROM departments ORDER BY id")
         rows = await cursor.fetchall()
-        return {"success": True, "departments": [
-            {"id": r[0], "department_name": r[1], "name": r[1], "created_at": r[2]}
-            for r in rows
-        ]}
+        return [{"id": r[0], "name": r[1]} for r in rows]
 
 @router.get("/pages")
 async def get_pages(
@@ -281,7 +292,6 @@ async def create_page(
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        # Get next ID
         await cursor.execute("SELECT NVL(MAX(id), 0) + 1 FROM static_pages")
         next_id = (await cursor.fetchone())[0]
         await cursor.execute("""
@@ -290,7 +300,6 @@ async def create_page(
         """, (next_id, page.get("slug"), page.get("title"), page.get("content"), 1 if page.get("is_active", True) else 0, current_user.id))
         await conn.commit()
         return {"success": True, "id": next_id}
-
 
 @router.put("/pages/{page_id}")
 async def update_page(
@@ -304,12 +313,9 @@ async def update_page(
             UPDATE static_pages SET url_slug=:slug,title=:title,html_content=:content,is_public=:is_public
             WHERE id=:page_id
         """, slug=page.get("slug"), title=page.get("title"), content=page.get("content"),
-             is_public=1 if page.get("is_active", True) else 0, page_id=page_id)
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Static page not found")
+            is_public=1 if page.get("is_active", True) else 0, page_id=page_id)
         await conn.commit()
         return {"success": True}
-
 
 @router.delete("/pages/{page_id}")
 async def delete_page(
@@ -319,11 +325,8 @@ async def delete_page(
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("DELETE FROM static_pages WHERE id=:page_id", page_id=page_id)
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=404, detail="Static page not found")
         await conn.commit()
         return {"success": True}
-
 
 @router.get("/logs")
 async def get_logs(
@@ -350,62 +353,42 @@ async def get_logs(
             for r in rows
         ]
 
-
 @router.get("/recycle")
 async def get_recycle(
     current_user: UserProfile = Depends(require_admin),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        # Courses
         await cursor.execute("SELECT id, title, created_by, deleted_at FROM courses WHERE deleted_at IS NOT NULL")
         courses_rows = await cursor.fetchall()
         courses = [{"id": r[0], "type": "course", "title": r[1], "trainer": str(r[2]), "deleted_at": r[3], "extra_info": ""} for r in courses_rows]
 
-        # Modules
         await cursor.execute("SELECT m.id, m.title, c.title, m.deleted_at FROM modules m JOIN courses c ON m.course_id = c.id WHERE m.deleted_at IS NOT NULL")
         modules_rows = await cursor.fetchall()
-        modules = [{"id": r[0], "type": "module", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Course: {r[2]}"} for r in modules_rows]
+        modules = [{"id": r[0], "type": "module", "title": r[1], "trainer": r[2], "deleted_at": r[3], "extra_info": f"Course: {r[2]}"} for r in modules_rows]
 
-        # Chapters
-        await cursor.execute("SELECT ch.id, ch.title, m.title, ch.deleted_at FROM chapters ch JOIN modules m ON ch.module_id = m.id WHERE ch.deleted_at IS NOT NULL")
+        await cursor.execute("SELECT ch.id, ch.title, c.title, ch.deleted_at FROM chapters ch JOIN modules m ON ch.module_id = m.id JOIN courses c ON m.course_id = c.id WHERE ch.deleted_at IS NOT NULL")
         chapters_rows = await cursor.fetchall()
-        chapters = [{"id": r[0], "type": "chapter", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Module: {r[2]}"} for r in chapters_rows]
+        chapters = [{"id": r[0], "type": "chapter", "title": r[1], "trainer": r[2], "deleted_at": r[3], "extra_info": f"Course: {r[2]}"} for r in chapters_rows]
 
         return courses + modules + chapters
-
-
-import psutil
-import app.core.database as db_module
 
 @router.get("/diagnostics")
 async def get_diagnostics(
     current_user: UserProfile = Depends(require_admin)
 ):
-    # Oracle pool diagnostics
-    pool_opened = 0
-    pool_busy = 0
-    if db_module._pool:
-        try:
-            pool_opened = db_module._pool.opened
-            pool_busy = db_module._pool.busy
-        except Exception:
-            pass
+    cpu_percent = psutil.cpu_percent(interval=None)
+    mem = psutil.virtual_memory()
 
-    # CPU and memory diagnostics
-    cpu_percent = psutil.cpu_percent()
-    virtual_mem = psutil.virtual_memory()
-    
+    db_opened = db._pool.get_opened_count() if db._pool else 0
+    db_busy = db._pool.get_busy_count() if db._pool else 0
+
     return {
-        "success": True,
-        "database": {
-            "status": "connected" if db_module._pool else "disconnected",
-            "opened_connections": pool_opened,
-            "busy_connections": pool_busy,
-        },
-        "system": {
-            "cpu_usage_percent": cpu_percent,
-            "memory_usage_percent": virtual_mem.percent,
-            "memory_available_mb": round(virtual_mem.available / (1024 * 1024), 2),
-        }
+        "cpu_usage_percent": cpu_percent,
+        "memory_used_mb": round(mem.used / (1024 * 1024), 2),
+        "memory_total_mb": round(mem.total / (1024 * 1024), 2),
+        "memory_percent": mem.percent,
+        "db_connections_busy": db_busy,
+        "db_connections_opened": db_opened,
+        "db_status": "Healthy (Oracle ADB)" if db._pool else "Disconnected"
     }
