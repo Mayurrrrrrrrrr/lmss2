@@ -45,7 +45,7 @@ async def main():
                 statements = [
                     (
                         "today_attempt",
-                        "SELECT score,xp_earned FROM daily_booster_attempts WHERE user_id=:user_id AND date=TRUNC(SYSDATE)",
+                        "SELECT score,xp_earned FROM daily_booster_attempts WHERE user_id=:user_id AND \"DATE\"=TRUNC(SYSDATE)",
                         {"user_id": 24},
                     ),
                     (

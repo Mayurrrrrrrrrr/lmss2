@@ -118,7 +118,7 @@ async def _apply_milestones(cursor, user_id: int):
 @router.get("/daily-booster")
 async def daily_booster(user: UserProfile = Depends(require_participant), conn=Depends(get_db_connection)):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT score,xp_earned FROM daily_booster_attempts WHERE user_id=:user_id AND date=TRUNC(SYSDATE)", user_id=user.id)
+        await cursor.execute("SELECT score,xp_earned FROM daily_booster_attempts WHERE user_id=:user_id AND \"DATE\"=TRUNC(SYSDATE)", user_id=user.id)
         attempt = await cursor.fetchone()
         if attempt: return {"available": False, "score": attempt[0], "xp_earned": attempt[1], "message": "Daily booster already completed."}
         await cursor.execute("""SELECT id,text,image_path FROM (SELECT q.id,q.text,q.image_path FROM questions q
@@ -141,7 +141,7 @@ async def daily_booster(user: UserProfile = Depends(require_participant), conn=D
 async def submit_daily_booster(body: BoosterAnswersInput, user: UserProfile = Depends(require_participant), conn=Depends(get_db_connection)):
     if not body.answers or len(body.answers)>3: raise HTTPException(422, "Submit between one and three booster answers")
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id FROM daily_booster_attempts WHERE user_id=:user_id AND date=TRUNC(SYSDATE) FOR UPDATE", user_id=user.id)
+        await cursor.execute("SELECT id FROM daily_booster_attempts WHERE user_id=:user_id AND \"DATE\"=TRUNC(SYSDATE) FOR UPDATE", user_id=user.id)
         if await cursor.fetchone(): raise HTTPException(409, "Daily booster already completed")
         score=0
         for question_id,option_id in body.answers.items():
@@ -152,7 +152,7 @@ async def submit_daily_booster(body: BoosterAnswersInput, user: UserProfile = De
             if not row: raise HTTPException(422, "An answer does not belong to the supplied booster question")
             score += 1 if row[0] else 0
         xp=score*15
-        await cursor.execute("INSERT INTO daily_booster_attempts(user_id,date,score,xp_earned,created_at) VALUES(:user_id,TRUNC(SYSDATE),:score,:xp,SYSTIMESTAMP)", user_id=user.id, score=score, xp=xp)
+        await cursor.execute("INSERT INTO daily_booster_attempts(user_id,\"DATE\",score,xp_earned,created_at) VALUES(:user_id,TRUNC(SYSDATE),:score,:xp,SYSTIMESTAMP)", user_id=user.id, score=score, xp=xp)
         for question_id in body.answers:
             await cursor.execute("INSERT INTO daily_booster_question_logs(user_id,question_id,answered_date) VALUES(:user_id,:question_id,TRUNC(SYSDATE))", user_id=user.id, question_id=question_id)
         await cursor.execute("""MERGE INTO user_streaks s USING(SELECT :user_id user_id FROM dual) src ON(s.user_id=src.user_id)
