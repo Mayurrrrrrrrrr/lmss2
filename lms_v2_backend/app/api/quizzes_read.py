@@ -17,7 +17,16 @@ async def list_quizzes(
             SELECT DISTINCT q.id, q.title, q.quiz_description, q.duration_value
             FROM quizzes q
             JOIN assignments a ON a.item_type = 'quiz' AND a.item_id = q.id
-            WHERE a.user_id = :user_id AND q.deleted_at IS NULL
+            WHERE q.deleted_at IS NULL
+              AND (
+                a.user_id = :user_id OR (
+                  a.user_id IS NULL AND a.course_id IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM assignments ca
+                     WHERE ca.item_type='course' AND ca.item_id=a.course_id
+                       AND ca.user_id=:user_id
+                  )
+                )
+              )
             ORDER BY q.title
         """, user_id=user.id)
         rows = await cursor.fetchall()
@@ -48,7 +57,16 @@ async def quiz_detail(
               AND (
                     :is_admin = 1 OR q.created_by = :user_id OR EXISTS (
                         SELECT 1 FROM assignments a
-                        WHERE a.item_type='quiz' AND a.item_id=q.id AND a.user_id=:user_id
+                        WHERE a.item_type='quiz' AND a.item_id=q.id
+                          AND (
+                            a.user_id=:user_id OR (
+                              a.user_id IS NULL AND a.course_id IS NOT NULL AND EXISTS (
+                                SELECT 1 FROM assignments ca
+                                 WHERE ca.item_type='course' AND ca.item_id=a.course_id
+                                   AND ca.user_id=:user_id
+                              )
+                            )
+                          )
                     )
               )
         """, quiz_id=quiz_id, user_id=user.id, is_admin=int(user.role == "admin"))
@@ -117,8 +135,19 @@ async def submit_quiz(
                     WHERE qa.quiz_id=q.id AND qa.user_id=:user_id)
             FROM quizzes q
             WHERE q.id=:quiz_id AND q.deleted_at IS NULL
-              AND EXISTS (SELECT 1 FROM assignments a
-                          WHERE a.item_type='quiz' AND a.item_id=q.id AND a.user_id=:user_id)
+              AND EXISTS (
+                    SELECT 1 FROM assignments a
+                     WHERE a.item_type='quiz' AND a.item_id=q.id
+                       AND (
+                         a.user_id=:user_id OR (
+                           a.user_id IS NULL AND a.course_id IS NOT NULL AND EXISTS (
+                             SELECT 1 FROM assignments ca
+                              WHERE ca.item_type='course' AND ca.item_id=a.course_id
+                                AND ca.user_id=:user_id
+                           )
+                         )
+                       )
+              )
         """, quiz_id=quiz_id, user_id=user.id)
         access = await cursor.fetchone()
         if not access:

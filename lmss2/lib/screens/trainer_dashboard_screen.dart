@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/trainer_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
+import '../widgets/course_viewer_dialog.dart';
+import '../widgets/quiz_runner_dialog.dart';
 
 class TrainerDashboardScreen extends StatefulWidget {
   const TrainerDashboardScreen({super.key});
@@ -219,9 +221,20 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    final courseId = int.tryParse(course.id);
+                    if (courseId == null) return;
+                    showDialog<void>(context: context, builder: (_) => CourseViewerDialog(
+                      courseId: courseId,
+                      courseTitle: course.title,
+                      isTrainerPreview: true,
+                    ));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
@@ -267,6 +280,7 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
                         ],
                       ),
                     ],
+                    ),
                   ),
                 ),
               );
@@ -340,7 +354,11 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
                   isThreeLine: true,
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () {
-                    // Navigate to quiz details
+                    showDialog<void>(context: context, builder: (_) => QuizRunnerDialog(
+                      quizId: int.parse(quiz.id),
+                      quizTitle: quiz.title,
+                      isTrainerPreview: true,
+                    ));
                   },
                 );
               },

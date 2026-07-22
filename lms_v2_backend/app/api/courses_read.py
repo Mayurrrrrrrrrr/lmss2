@@ -1,3 +1,7 @@
+import inspect
+import hashlib
+import hmac
+import time
 from typing import Any
 from urllib.parse import quote
 
@@ -5,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 import oracledb
 
 from app.core.database import get_db_connection
+from app.core.config import settings
 from app.core.security import get_current_user
 from app.schemas.user import UserProfile
 
@@ -12,11 +17,11 @@ from app.schemas.user import UserProfile
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
 
-def _require_learner(user: UserProfile = Depends(get_current_user)) -> UserProfile:
-    if user.role not in {"participant", "area_manager", "admin"}:
+def _require_course_viewer(user: UserProfile = Depends(get_current_user)) -> UserProfile:
+    if user.role not in {"participant", "area_manager", "trainer", "admin"}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="This course view is available to learners only.",
+            detail="This course view is not available for your role.",
         )
     return user
 
@@ -28,13 +33,30 @@ def _media_url(request: Request, raw_path: Any) -> str | None:
     if value.startswith(("http://", "https://")):
         return value
     clean = value.lstrip("/")
-    return str(request.base_url).rstrip("/") + "/api/v2/media/stream/" + quote(clean)
+    expires = int(time.time()) + 3600
+    payload = f"{clean}:{expires}".encode()
+    signature = hmac.new(settings.SECRET_KEY.encode(), payload, hashlib.sha256).hexdigest()
+    return (
+        str(request.base_url).rstrip("/")
+        + "/api/v2/media/stream/"
+        + quote(clean)
+        + f"?expires={expires}&signature={signature}"
+    )
+
+
+async def _lob_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if hasattr(value, "read"):
+        result = value.read()
+        value = await result if inspect.isawaitable(result) else result
+    return str(value)
 
 
 @router.get("/list")
 async def list_courses(
     request: Request,
-    user: UserProfile = Depends(_require_learner),
+    user: UserProfile = Depends(_require_course_viewer),
     conn: oracledb.AsyncConnection = Depends(get_db_connection),
 ) -> dict[str, Any]:
     async with conn.cursor() as cursor:
@@ -99,7 +121,7 @@ async def list_courses(
 async def course_detail(
     course_id: int,
     request: Request,
-    user: UserProfile = Depends(_require_learner),
+    user: UserProfile = Depends(_require_course_viewer),
     conn: oracledb.AsyncConnection = Depends(get_db_connection),
 ) -> dict[str, Any]:
     async with conn.cursor() as cursor:
@@ -109,15 +131,21 @@ async def course_detail(
               FROM courses c
              WHERE c.id = :course_id
                AND c.deleted_at IS NULL
-               AND EXISTS (
+               AND (
+                   :is_admin = 1
+                   OR (:is_trainer = 1 AND c.created_by = :learner_id)
+                   OR EXISTS (
                    SELECT 1 FROM assignments a
                     WHERE a.item_id = c.id
                       AND a.item_type = 'course'
                       AND a.user_id = :learner_id
+                   )
                )
             """,
             course_id=course_id,
             learner_id=user.id,
+            is_admin=int(user.role == "admin"),
+            is_trainer=int(user.role == "trainer"),
         )
         course = await cursor.fetchone()
         if not course:
@@ -192,15 +220,16 @@ async def course_detail(
         total += 1
         is_completed = bool(row[8])
         completed += int(is_completed)
-        content_type = row[5] or ""
+        content_type = (row[5] or "").lower()
+        content_value = await _lob_text(row[6])
         module["chapters"].append(
             {
                 "id": int(row[3]),
                 "title": row[4] or "",
                 "content_type": content_type,
                 "sequence_order": int(row[7] or 0),
-                "media_url": None if content_type == "html" else _media_url(request, row[6]),
-                "html_content": str(row[6]) if content_type == "html" and row[6] else None,
+                "media_url": None if content_type == "html" else _media_url(request, content_value),
+                "html_content": content_value if content_type == "html" else None,
                 "is_completed": is_completed,
                 "progress_percent": int(row[9] or 0),
             }
@@ -234,7 +263,7 @@ async def course_detail(
 @router.get("/chapter_content")
 async def chapter_content(
     chapter_id: int,
-    user: UserProfile = Depends(_require_learner),
+    user: UserProfile = Depends(_require_course_viewer),
     conn: oracledb.AsyncConnection = Depends(get_db_connection),
 ) -> dict[str, Any]:
     async with conn.cursor() as cursor:

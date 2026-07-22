@@ -36,13 +36,12 @@ class _PublicStaticPageScreenState extends State<PublicStaticPageScreen> {
 
     try {
       final response = await _dio.get(
-        'admin/page_content',
-        queryParameters: {'slug': widget.slug},
+        'public/pages/${Uri.encodeComponent(widget.slug)}',
       );
 
-      if (response.data['success'] == true) {
+      if (response.data is Map && response.data['content'] != null) {
         setState(() {
-          _pageData = response.data['page'];
+          _pageData = Map<String, dynamic>.from(response.data);
           _isLoading = false;
         });
       } else {

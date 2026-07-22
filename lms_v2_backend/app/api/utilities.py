@@ -158,3 +158,22 @@ async def public_page(slug: str, user: UserProfile = Depends(get_current_user), 
         if not row:
             raise HTTPException(404, "Page not found")
         return await _page_dict(row)
+
+
+@router.get("/public/pages/{slug}")
+async def unauthenticated_public_page(slug: str, conn=Depends(get_db_connection)):
+    """Return published CMS content for public hash routes and shared links."""
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            """
+            SELECT id,title,url_slug,html_content,created_at
+              FROM static_pages
+             WHERE is_public=1
+               AND (LOWER(url_slug)=LOWER(:slug) OR TO_CHAR(id)=:slug)
+            """,
+            slug=slug.strip(),
+        )
+        row = await cursor.fetchone()
+        if not row:
+            raise HTTPException(404, "Published page not found")
+        return await _page_dict(row)

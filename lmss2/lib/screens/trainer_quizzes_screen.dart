@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../widgets/app_sidebar.dart';
+import '../widgets/quiz_runner_dialog.dart';
 
 class TrainerQuizzesScreen extends StatefulWidget {
   const TrainerQuizzesScreen({super.key});
@@ -59,10 +60,17 @@ class _TrainerQuizzesScreenState extends State<TrainerQuizzesScreen> with Single
         subtitle: Text('${quiz['question_count'] ?? 0} questions - ${quiz['participant_count'] ?? 0} learners'),
         onTap: () => context.go('/trainer/quizzes/${quiz['id']}?title=${Uri.encodeComponent(quiz['title']?.toString() ?? '')}'),
         trailing: PopupMenuButton<String>(onSelected: (action) async {
+          if (action == 'preview' && context.mounted) {
+            await showDialog<void>(context: context, builder: (_) => QuizRunnerDialog(
+              quizId: quiz['id'] as int,
+              quizTitle: quiz['title']?.toString() ?? 'Quiz preview',
+              isTrainerPreview: true,
+            ));
+          }
           if (action == 'edit') await _save(quiz);
           if (action == 'duplicate') { await _api.duplicateTrainerQuiz(quiz['id'] as int); _reload(); }
           if (action == 'delete') { await _api.deleteTrainerQuiz(quiz['id'] as int); _reload(); }
-        }, itemBuilder: (_) => const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
+        }, itemBuilder: (_) => const [PopupMenuItem(value:'preview',child:Text('Preview quiz')),PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
       ));
     });
   });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../widgets/app_sidebar.dart';
+import '../widgets/course_viewer_dialog.dart';
 
 class TrainerCoursesScreen extends StatefulWidget {
   const TrainerCoursesScreen({super.key});
@@ -57,6 +58,13 @@ class _TrainerCoursesScreenState extends State<TrainerCoursesScreen> {
           subtitle: Text('${item['module_count'] ?? 0} modules • ${item['chapter_count'] ?? 0} chapters • ${item['participant_count'] ?? 0} learners'),
           onTap: () => context.go('/trainer/courses/${item['id']}?title=${Uri.encodeComponent(item['title']?.toString() ?? '')}'),
           trailing: PopupMenuButton<String>(onSelected: (action) async {
+            if (action == 'preview' && context.mounted) {
+              await showDialog<void>(context: context, builder: (_) => CourseViewerDialog(
+                courseId: item['id'] as int,
+                courseTitle: item['title']?.toString() ?? 'Course preview',
+                isTrainerPreview: true,
+              ));
+            }
             if (action == 'edit') await _save(item);
             if (action == 'duplicate') { await _api.duplicateTrainerCourse(item['id'] as int); _reload(); }
             if (action == 'certificate' && context.mounted) context.go('/trainer/courses/${item['id']}/certificate?title=${Uri.encodeComponent(item['title']?.toString() ?? '')}');
@@ -64,7 +72,7 @@ class _TrainerCoursesScreenState extends State<TrainerCoursesScreen> {
               final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(title: const Text('Delete course?'), content: const Text('The course will be moved to the recycle state.'), actions: [TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))])) ?? false;
               if (ok) { await _api.deleteTrainerCourse(item['id'] as int); if (mounted) _reload(); }
             }
-          }, itemBuilder: (_) => const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'certificate',child:Text('Certificate design')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
+          }, itemBuilder: (_) => const [PopupMenuItem(value:'preview',child:Text('Preview participant view')),PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'certificate',child:Text('Certificate design')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
         ));
       });
     }),

@@ -75,8 +75,6 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
       }
   }
 
-  }
-
   Future<void> _markChapterComplete(int chapterId) async {
     if (widget.isTrainerPreview) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -237,6 +235,8 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
               typeIcon = Icons.play_circle_fill;
             } else if (cType.contains('pdf')) {
               typeIcon = Icons.picture_as_pdf;
+            } else if (cType.contains('ppt') || cType.contains('presentation')) {
+              typeIcon = Icons.slideshow;
             }
 
             return ListTile(
@@ -403,18 +403,24 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
       return const Center(child: Text('Video Player (Native)', style: TextStyle(color: Colors.white)));
     }
 
-    // 3. PDF DOCUMENT VIEWER
-    if (type.contains('pdf') || mediaUrl.endsWith('.pdf')) {
-      final String pdfTarget = mediaUrl;
-      final String googleDocUrl = 'https://docs.google.com/gview?url=$pdfTarget&embedded=true';
-      final String viewType = 'pdf-iframe-$chapterId';
+    // 3. PDF / OFFICE DOCUMENT VIEWER
+    final lowerUrl = mediaUrl.toLowerCase();
+    final isDocument = type.contains('pdf') || type.contains('ppt') ||
+        type.contains('presentation') || type.contains('document') ||
+        lowerUrl.endsWith('.pdf') || lowerUrl.endsWith('.ppt') ||
+        lowerUrl.endsWith('.pptx') || lowerUrl.endsWith('.doc') ||
+        lowerUrl.endsWith('.docx');
+    if (isDocument) {
+      final String encodedTarget = Uri.encodeComponent(mediaUrl);
+      final String documentUrl = 'https://docs.google.com/gview?url=$encodedTarget&embedded=true';
+      final String viewType = 'document-iframe-$chapterId';
 
       if (kIsWeb) {
         ui_web.platformViewRegistry.registerViewFactory(
           viewType,
           (int viewId) {
             final element = html.IFrameElement()
-              ..src = googleDocUrl
+              ..src = documentUrl
               ..style.border = 'none'
               ..style.width = '100%'
               ..style.height = '100%';
@@ -424,7 +430,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
         return HtmlElementView(viewType: viewType);
       }
 
-      return const Center(child: Text('PDF Document Viewer', style: TextStyle(color: Colors.white)));
+      return const Center(child: Text('Document preview is available in the web portal.', style: TextStyle(color: Colors.white)));
     }
 
     // 4. HTML / TEXT CONTENT
@@ -479,6 +485,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
     if (type.contains('youtube')) return Colors.red;
     if (type.contains('video')) return Colors.purple;
     if (type.contains('pdf')) return Colors.redAccent;
+    if (type.contains('ppt') || type.contains('presentation')) return Colors.deepOrange;
     return Colors.blue;
   }
 }
