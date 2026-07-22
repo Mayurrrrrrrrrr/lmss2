@@ -74,8 +74,20 @@ async def main() -> None:
         checks.append({"name": "trainer_course_preview", "status": status, "ok": status == 200})
         if status == 200 and isinstance(body, dict):
             chapters = [chapter for module in body.get("modules", []) for chapter in module.get("chapters", [])]
-            signed = [chapter.get("media_url") for chapter in chapters if chapter.get("media_url")]
-            checks.append({"name": "signed_training_media", "count": len(signed), "ok": all("signature=" in url and "expires=" in url for url in signed)})
+            media_urls = [chapter.get("media_url") for chapter in chapters if chapter.get("media_url")]
+            invalid_urls = [
+                url for url in media_urls
+                if not url.startswith(("http://", "https://"))
+                or ("/api/v2/media/stream/" in url and not ("signature=" in url and "expires=" in url))
+            ]
+            checks.append({
+                "name": "training_media_urls",
+                "count": len(media_urls),
+                "protected_local": sum("/api/v2/media/stream/" in url for url in media_urls),
+                "external": sum("/api/v2/media/stream/" not in url for url in media_urls),
+                "ok": not invalid_urls,
+                "invalid": invalid_urls,
+            })
     else:
         checks.append({"name": "trainer_course_preview", "ok": False, "detail": "No owned course"})
 
