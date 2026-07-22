@@ -70,7 +70,7 @@ async def main() -> None:
                 ]
 
                 quizzes = await fetch_all(cursor, """
-                    SELECT q.id,q.title,q.created_by,q.created_at,
+                    SELECT q.id,q.title,q.created_by,
                            (SELECT COUNT(*) FROM questions x WHERE x.quiz_id=q.id),
                            (SELECT COUNT(*) FROM assignments a
                             WHERE a.item_type='quiz' AND a.item_id=q.id),
@@ -79,8 +79,8 @@ async def main() -> None:
                 """)
                 quiz_candidates = [
                     {"id": int(row[0]), "title": row[1], "created_by": row[2],
-                     "created_at": row[3], "questions": int(row[4] or 0),
-                     "assignments": int(row[5] or 0), "attempts": int(row[6] or 0)}
+                     "questions": int(row[3] or 0), "assignments": int(row[4] or 0),
+                     "attempts": int(row[5] or 0)}
                     for row in quizzes if looks_synthetic(row[1])
                 ]
 
