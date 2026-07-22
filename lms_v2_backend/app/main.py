@@ -128,4 +128,5 @@ app.include_router(media_router, prefix="/api/v2", tags=["Media"])
 
 @app.get("/api/health")
 async def health_check():
+    """Minimal health check endpoint for monitoring."""
     return {"status": "ok", "message": "Firefly LMS V2 Backend is running."}

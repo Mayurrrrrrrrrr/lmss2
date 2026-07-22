@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/trainer_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
-import '../widgets/trainer_course_detail_dialog.dart';
 
 class TrainerDashboardScreen extends StatefulWidget {
   const TrainerDashboardScreen({super.key});
@@ -220,20 +219,8 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => TrainerCourseDetailDialog(
-                        courseTitle: course.title,
-                        participantCount: course.participantCount,
-                        completionRate: course.completionRate,
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -282,8 +269,7 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
                     ],
                   ),
                 ),
-              ),
-            );
+              );
             },
           ),
       ],
