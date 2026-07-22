@@ -35,7 +35,13 @@ class ParticipantsProvider with ChangeNotifier {
 
     try {
       final response = await _dio.get('admin/participants');
-      final List<dynamic> data = response.data['participants'] ?? response.data;
+      final dynamic rawData = response.data;
+      List<dynamic> data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('participants')) {
+        data = rawData['participants'] as List;
+      }
       _participants = data.map((e) => Participant.fromJson(e)).toList();
     } catch (e) {
       _error = 'Failed to load participants: $e';

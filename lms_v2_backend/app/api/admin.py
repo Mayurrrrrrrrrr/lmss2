@@ -130,17 +130,76 @@ async def get_participants(
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
+            SELECT u.id, u.username, p.full_name, u.role, u.created_at,
+                   p.store_code, p.city, p.designation, p.department,
+                   (SELECT COUNT(*) FROM user_profiles sub WHERE sub.reporting_manager_id = u.id)
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.role = 'participant'
+            WHERE u.role IN ('participant', 'area_manager')
             ORDER BY u.created_at DESC
         """)
         rows = await cursor.fetchall()
         return {"success": True, "participants": [
-            {"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]}
+            {
+                "id": r[0], "username": r[1], "full_name": r[2] or "",
+                "role": r[3], "created_at": r[4], "store_code": r[5] or "",
+                "city": r[6] or "", "designation": r[7] or "",
+                "department": r[8] or "", "subordinate_count": int(r[9] or 0)
+            }
             for r in rows
         ]}
+
+@router.put("/participants/{user_id}")
+async def update_participant(
+    user_id: int,
+    payload: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    role = str(payload.get("role", "participant")).lower()
+    if role not in {"participant", "area_manager"}:
+        raise HTTPException(status_code=400, detail="Role must be participant or area_manager")
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            "UPDATE users SET role=:role WHERE id=:user_id AND role IN ('participant','area_manager')",
+            role=role, user_id=user_id,
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Participant not found")
+        await cursor.execute("""
+            MERGE INTO user_profiles p
+            USING (SELECT :user_id user_id FROM dual) src
+            ON (p.user_id=src.user_id)
+            WHEN MATCHED THEN UPDATE SET
+                full_name=:full_name, store_code=:store_code, city=:city,
+                designation=:designation, department=:department
+            WHEN NOT MATCHED THEN INSERT
+                (user_id,full_name,store_code,city,designation,department)
+            VALUES (:user_id,:full_name,:store_code,:city,:designation,:department)
+        """, user_id=user_id, full_name=payload.get("full_name"),
+             store_code=payload.get("store_code"), city=payload.get("city"),
+             designation=payload.get("designation"), department=payload.get("department"))
+        await conn.commit()
+    return {"success": True}
+
+@router.get("/participants/{manager_id}/team")
+async def get_team_members(
+    manager_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT u.id,u.username,p.full_name,u.role,p.store_code,p.city,p.designation,p.department
+            FROM users u JOIN user_profiles p ON p.user_id=u.id
+            WHERE p.reporting_manager_id=:manager_id ORDER BY p.full_name
+        """, manager_id=manager_id)
+        rows = await cursor.fetchall()
+    return {"success": True, "participants": [
+        {"id": r[0], "username": r[1], "full_name": r[2] or "", "role": r[3],
+         "store_code": r[4] or "", "city": r[5] or "", "designation": r[6] or "",
+         "department": r[7] or ""} for r in rows
+    ]}
 
 @router.get("/stores")
 async def get_stores(
@@ -193,6 +252,26 @@ async def get_pages(
         await cursor.execute("SELECT id, url_slug, title, html_content, is_public, created_at FROM static_pages ORDER BY id")
         rows = await cursor.fetchall()
         return [{"id": r[0], "slug": r[1], "title": r[2], "content": str(r[3]), "is_active": bool(r[4]), "created_at": r[5]} for r in rows]
+
+@router.get("/page_content")
+async def get_public_page(
+    slug: str,
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT id,url_slug,title,html_content,is_public,created_at
+            FROM static_pages
+            WHERE (url_slug=:slug OR TO_CHAR(id)=:slug) AND is_public=1
+        """, slug=slug)
+        row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Public page not found")
+    return {"success": True, "page": {
+        "id": row[0], "slug": row[1], "title": row[2],
+        "content": str(row[3]) if row[3] else "", "is_public": True,
+        "created_at": row[5],
+    }}
 
 
 @router.post("/pages")

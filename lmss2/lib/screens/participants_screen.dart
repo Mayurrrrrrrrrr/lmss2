@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/participants_provider.dart';
 import '../models/participant.dart';
+import '../widgets/team_members_dialog.dart';
+import '../widgets/edit_participant_dialog.dart';
 
 class ParticipantsScreen extends StatefulWidget {
   const ParticipantsScreen({Key? key}) : super(key: key);
@@ -160,7 +162,13 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                                       children: [
                                         TextButton.icon(
                                           onPressed: () {
-                                            // View team
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => TeamMembersDialog(
+                                                managerId: p.id,
+                                                managerName: p.fullName.isNotEmpty ? p.fullName : p.username,
+                                              ),
+                                            );
                                           },
                                           icon: const Icon(Icons.people_outline, size: 18),
                                           label: Text('Team (${p.subordinateCount})'),
@@ -171,7 +179,14 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                                         ),
                                         TextButton.icon(
                                           onPressed: () {
-                                            // Edit
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => EditParticipantDialog(participant: p),
+                                            ).then((updated) {
+                                              if (updated == true) {
+                                                context.read<ParticipantsProvider>().fetchParticipants();
+                                              }
+                                            });
                                           },
                                           icon: const Icon(Icons.edit_outlined, size: 18),
                                           label: const Text('Edit'),

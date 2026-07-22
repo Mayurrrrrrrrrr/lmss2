@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/participant_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
-import 'package:go_router/go_router.dart';
+import '../widgets/course_viewer_dialog.dart';
+import '../widgets/quiz_runner_dialog.dart';
 
 class ParticipantDashboardScreen extends StatefulWidget {
   const ParticipantDashboardScreen({super.key});
@@ -78,6 +79,14 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
           ),
           const SizedBox(height: 16),
           _buildEnrolledCoursesList(data.enrolledCourses),
+
+          const SizedBox(height: 32),
+          const Text(
+            'Available Quizzes',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          _buildAvailableQuizzes(data.availableQuizzes),
           
           const SizedBox(height: 32),
           const Text(
@@ -175,18 +184,12 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (course.hasPendingQuiz) {
-                        _takeQuiz(course);
-                      } else {
-                        _continueCourse(course);
-                      }
-                    },
+                    onPressed: () => _continueCourse(course),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: course.hasPendingQuiz ? Colors.red : Colors.blue,
+                      backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
                     ),
-                    child: Text(course.hasPendingQuiz ? 'Take Quiz' : (course.progress == 1.0 ? 'Review Course' : 'Continue')),
+                    child: Text(course.progress == 1.0 ? 'Review Course' : 'Continue'),
                   ),
                 ),
               ],
@@ -238,19 +241,63 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
     );
   }
 
-  void _takeQuiz(EnrolledCourse course) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Starting quiz for ${course.title}...')),
+  Widget _buildAvailableQuizzes(List<AvailableQuiz> quizzes) {
+    if (quizzes.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(child: Text('No quizzes are currently due.')),
+        ),
+      );
+    }
+    return Column(
+      children: quizzes.map((quiz) => Card(
+        child: ListTile(
+          leading: const Icon(Icons.quiz_outlined),
+          title: Text(quiz.title),
+          subtitle: quiz.dueDate == null ? null : Text('Due: ${quiz.dueDate}'),
+          trailing: FilledButton(
+            onPressed: () => _takeQuiz(quiz),
+            child: const Text('Start Quiz'),
+          ),
+        ),
+      )).toList(),
     );
   }
 
+  void _takeQuiz(AvailableQuiz quiz) {
+    showDialog(
+      context: context,
+      builder: (context) => QuizRunnerDialog(
+        quizId: int.parse(quiz.id),
+        quizTitle: quiz.title,
+      ),
+    ).then((updated) {
+      if (updated == true) {
+        setState(() {
+          _dashboardFuture = _apiService.getParticipantDashboard();
+        });
+      }
+    });
+  }
+
   void _continueCourse(EnrolledCourse course) {
-    context.go('/participant/courses/${course.id}');
+    showDialog(
+      context: context,
+      builder: (context) => CourseViewerDialog(
+        courseId: int.parse(course.id),
+        courseTitle: course.title,
+      ),
+    ).then((_) {
+      setState(() {
+        _dashboardFuture = _apiService.getParticipantDashboard();
+      });
+    });
   }
 
   void _downloadCertificate(Certificate cert) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Downloading certificate for ${cert.courseTitle}...')),
+      SnackBar(content: Text('Certificate download for ${cert.courseTitle} is not available yet.')),
     );
   }
 }

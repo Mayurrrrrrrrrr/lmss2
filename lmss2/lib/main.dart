@@ -32,6 +32,7 @@ import 'screens/trainer_assignments_screen.dart';
 import 'screens/trainer_quizzes_screen.dart';
 import 'screens/trainer_questions_screen.dart';
 import 'screens/diagnostics_screen.dart';
+import 'screens/public_static_page_screen.dart';
 import 'screens/trainer_roleplays_screen.dart';
 import 'screens/participant_roleplays_screen.dart';
 import 'screens/trainer_tasks_screen.dart';
@@ -93,8 +94,9 @@ class _MyAppState extends State<MyApp> {
       redirect: (context, state) {
         final isAuthenticated = authProvider.isAuthenticated;
         final isLoginRoute = state.matchedLocation == '/';
+        final isPublicPage = state.matchedLocation.startsWith('/pages/');
 
-        if (!isAuthenticated && !isLoginRoute) {
+        if (!isAuthenticated && !isLoginRoute && !isPublicPage) {
           return '/';
         }
 
@@ -105,6 +107,13 @@ class _MyAppState extends State<MyApp> {
         return null;
       },
       routes: [
+        GoRoute(
+          path: '/pages/:slug',
+          builder: (context, state) {
+            final slug = state.pathParameters['slug'] ?? '';
+            return PublicStaticPageScreen(slug: slug);
+          },
+        ),
         GoRoute(
           path: '/',
           builder: (context, state) => const LoginScreen(),

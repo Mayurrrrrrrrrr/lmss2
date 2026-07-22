@@ -200,7 +200,7 @@ async def course_detail(
                 "content_type": content_type,
                 "sequence_order": int(row[7] or 0),
                 "media_url": None if content_type == "html" else _media_url(request, row[6]),
-                "html_content": None,
+                "html_content": str(row[6]) if content_type == "html" and row[6] else None,
                 "is_completed": is_completed,
                 "progress_percent": int(row[9] or 0),
             }
