@@ -1,11 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Conditionally register platform view factories for Web
-import 'dart:ui_web' as ui_web;
-import 'dart:html' as html;
+import 'platform_content_view.dart';
 
 class CourseViewerDialog extends StatefulWidget {
   final int courseId;
@@ -350,24 +347,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
       final String embedUrl = 'https://www.youtube.com/embed/$videoId?autoplay=0';
       final String viewType = 'youtube-iframe-$chapterId-$videoId';
 
-      if (kIsWeb) {
-        ui_web.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int viewId) {
-            final element = html.IFrameElement()
-              ..src = embedUrl
-              ..style.border = 'none'
-              ..style.width = '100%'
-              ..style.height = '100%'
-              ..allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-              ..allowFullscreen = true;
-            return element;
-          },
-        );
-        return HtmlElementView(viewType: viewType);
-      }
-
-      return Container(
+      return buildEmbeddedContent(viewType: viewType, source: embedUrl, fallback: Container(
         color: Colors.black87,
         child: Center(
           child: Column(
@@ -379,29 +359,13 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
             ],
           ),
         ),
-      );
+      ));
     }
 
     // 2. VIDEO FILE (MP4 / WEBM)
     if (type.contains('video') || mediaUrl.endsWith('.mp4') || mediaUrl.contains('/stream/')) {
       final String viewType = 'video-element-$chapterId';
-      if (kIsWeb) {
-        ui_web.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int viewId) {
-            final element = html.VideoElement()
-              ..src = mediaUrl
-              ..controls = true
-              ..style.border = 'none'
-              ..style.width = '100%'
-              ..style.height = '100%';
-            return element;
-          },
-        );
-        return HtmlElementView(viewType: viewType);
-      }
-
-      return const Center(child: Text('Video Player (Native)', style: TextStyle(color: Colors.white)));
+      return buildEmbeddedContent(viewType: viewType, source: mediaUrl, video: true, fallback: const Center(child: Text('Video Player (Native)', style: TextStyle(color: Colors.white))));
     }
 
     // 3. PDF / OFFICE DOCUMENT VIEWER
@@ -416,22 +380,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
       final String documentUrl = 'https://docs.google.com/gview?url=$encodedTarget&embedded=true';
       final String viewType = 'document-iframe-$chapterId';
 
-      if (kIsWeb) {
-        ui_web.platformViewRegistry.registerViewFactory(
-          viewType,
-          (int viewId) {
-            final element = html.IFrameElement()
-              ..src = documentUrl
-              ..style.border = 'none'
-              ..style.width = '100%'
-              ..style.height = '100%';
-            return element;
-          },
-        );
-        return HtmlElementView(viewType: viewType);
-      }
-
-      return const Center(child: Text('Document preview is available in the web portal.', style: TextStyle(color: Colors.white)));
+      return buildEmbeddedContent(viewType: viewType, source: documentUrl, fallback: const Center(child: Text('Document preview is available in the web portal.', style: TextStyle(color: Colors.white))));
     }
 
     // 4. HTML / TEXT CONTENT
@@ -440,31 +389,13 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
         ? htmlContent
         : (mediaUrl.isNotEmpty ? mediaUrl : '<h3>Chapter Reading Material</h3><p>Complete all assigned readings and exercises.</p>');
 
-    if (kIsWeb) {
-      ui_web.platformViewRegistry.registerViewFactory(
-        viewType,
-        (int viewId) {
-          final element = html.DivElement()
-            ..innerHtml = contentToDisplay
-            ..style.padding = '20px'
-            ..style.color = '#ffffff'
-            ..style.fontFamily = 'Roboto, sans-serif'
-            ..style.overflowY = 'auto'
-            ..style.width = '100%'
-            ..style.height = '100%';
-          return element;
-        },
-      );
-      return HtmlElementView(viewType: viewType);
-    }
-
-    return Container(
+    return buildEmbeddedContent(viewType: viewType, htmlContent: contentToDisplay, fallback: Container(
       color: Colors.white,
       padding: const EdgeInsets.all(20),
       child: SingleChildScrollView(
         child: Text(contentToDisplay, style: const TextStyle(fontSize: 16)),
       ),
-    );
+    ));
   }
 
   String _extractYouTubeId(String url) {

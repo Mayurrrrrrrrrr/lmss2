@@ -218,7 +218,12 @@ class _QuizRunnerDialogState extends State<QuizRunnerDialog> {
 
         // Options List
         Expanded(
-          child: ListView.builder(
+          child: RadioGroup<int>(
+            groupValue: _selectedAnswers[qId],
+            onChanged: (value) {
+              if (value != null) setState(() => _selectedAnswers[qId] = value);
+            },
+            child: ListView.builder(
             itemCount: options.length,
             itemBuilder: (context, index) {
               final opt = options[index];
@@ -240,12 +245,6 @@ class _QuizRunnerDialogState extends State<QuizRunnerDialog> {
                   title: Text(opt['text'] ?? ''),
                   leading: Radio<int>(
                     value: optId,
-                    groupValue: _selectedAnswers[qId],
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedAnswers[qId] = val!;
-                      });
-                    },
                   ),
                   onTap: () {
                     setState(() {
@@ -255,6 +254,7 @@ class _QuizRunnerDialogState extends State<QuizRunnerDialog> {
                 ),
               );
             },
+            ),
           ),
         ),
 

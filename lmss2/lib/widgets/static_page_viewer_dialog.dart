@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui_web' as ui_web;
-import 'dart:html' as html;
-import 'package:flutter/foundation.dart';
 import '../models/static_page_model.dart';
+import 'platform_content_view.dart';
 
 class StaticPageViewerDialog extends StatelessWidget {
   final StaticPageModel page;
@@ -17,24 +15,6 @@ class StaticPageViewerDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final String liveUrl = 'https://lms2.yuktaa.com/#/pages/${page.slug}';
     final String viewType = 'static-page-html-${page.id}';
-
-    if (kIsWeb) {
-      ui_web.platformViewRegistry.registerViewFactory(
-        viewType,
-        (int viewId) {
-          final element = html.DivElement()
-            ..innerHtml = page.content.isNotEmpty ? page.content : '<h3>${page.title}</h3><p>No content provisioned yet.</p>'
-            ..style.padding = '24px'
-            ..style.color = '#1f2937'
-            ..style.fontFamily = 'Roboto, sans-serif'
-            ..style.backgroundColor = '#ffffff'
-            ..style.overflowY = 'auto'
-            ..style.width = '100%'
-            ..style.height = '100%';
-          return element;
-        },
-      );
-    }
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -96,12 +76,11 @@ class StaticPageViewerDialog extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.grey.shade300),
                 ),
-                child: kIsWeb
-                    ? HtmlElementView(viewType: viewType)
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(page.content),
-                      ),
+                child: buildEmbeddedContent(
+                  viewType: viewType,
+                  htmlContent: page.content.isNotEmpty ? page.content : '<h3>${page.title}</h3><p>No content provisioned yet.</p>',
+                  fallback: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Text(page.content)),
+                ),
               ),
             ),
             const SizedBox(height: 16),

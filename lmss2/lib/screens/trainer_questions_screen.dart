@@ -26,7 +26,7 @@ class _TrainerQuestionsScreenState extends State<TrainerQuestionsScreen> {
         TextField(controller:text,maxLines:3,decoration:const InputDecoration(labelText:'Question')),
         DropdownButtonFormField<String>(initialValue:difficulty,items:const ['easy','medium','hard'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v)=>update(()=>difficulty=v!),decoration:const InputDecoration(labelText:'Difficulty')),
         const SizedBox(height:12),const Align(alignment:Alignment.centerLeft,child:Text('Answers (select the correct answer)',style:TextStyle(fontWeight:FontWeight.bold))),
-        ...List.generate(4,(i)=>RadioListTile<int>(value:i,groupValue:correct,onChanged:(v)=>update(()=>correct=v!),title:TextField(controller:optionControllers[i],decoration:InputDecoration(labelText:'Option ${i+1}')))),
+        RadioGroup<int>(groupValue:correct,onChanged:(value){if(value!=null)update(()=>correct=value);},child:Column(children:List.generate(4,(i)=>RadioListTile<int>(value:i,title:TextField(controller:optionControllers[i],decoration:InputDecoration(labelText:'Option ${i+1}')))))),
       ]))),
       actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext),child:const Text('Cancel')),FilledButton(onPressed:(){final options=<Map<String,dynamic>>[];for(var i=0;i<optionControllers.length;i++){if(optionControllers[i].text.trim().isNotEmpty)options.add({'text':optionControllers[i].text.trim(),'is_correct':i==correct});}if(text.text.trim().isEmpty||options.length<2||!options.any((o)=>o['is_correct']==true))return;Navigator.pop(dialogContext,{'text':text.text.trim(),'image_path':question?['image_path'],'difficulty':difficulty,'options':options});},child:const Text('Save'))],
     )));
