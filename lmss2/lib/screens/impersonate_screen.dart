@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../providers/users_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/app_sidebar.dart';
 
 class ImpersonateScreen extends StatefulWidget {
@@ -42,21 +43,26 @@ class _ImpersonateScreenState extends State<ImpersonateScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              // In a real app, you would swap out the auth token in AuthProvider
-              // and redirect them. For now, we mock it by updating the role
-              // and redirecting to their respective dashboard.
-              
-              // Simulate API call and state update
+              try {
+                await context.read<AuthProvider>().impersonate(user.id);
+              } catch (error) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Now impersonating ${user.username}...')),
               );
               
               String route = '/dashboard';
-              if (user.role == 'trainer') {
+              if (user.role.toLowerCase() == 'trainer') {
                 route = '/trainer/dashboard';
-              } else if (user.role == 'participant') {
+              } else if (user.role.toLowerCase() == 'participant' || user.role.toLowerCase() == 'area_manager') {
                 route = '/participant/dashboard';
               }
               

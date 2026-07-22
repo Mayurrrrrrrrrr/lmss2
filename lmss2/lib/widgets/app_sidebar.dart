@@ -38,6 +38,20 @@ class AppSidebar extends StatelessWidget {
               ],
             ),
           ),
+          if (context.watch<AuthProvider>().isImpersonating)
+            Material(
+              color: Colors.amber.shade100,
+              child: ListTile(
+                leading: const Icon(Icons.visibility, color: Colors.deepOrange),
+                title: const Text('Impersonation active'),
+                subtitle: Text('Viewing as ${context.watch<AuthProvider>().displayName}'),
+                trailing: const Icon(Icons.close),
+                onTap: () async {
+                  await context.read<AuthProvider>().stopImpersonating();
+                  if (context.mounted) context.go('/dashboard');
+                },
+              ),
+            ),
           _buildSectionHeader('Main'),
           _buildListTile(context, Icons.dashboard, 'Home', '/dashboard', currentRoute),
 

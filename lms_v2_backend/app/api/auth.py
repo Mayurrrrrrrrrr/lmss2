@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 import oracledb
 from app.core.database import get_db_connection
 from app.core.security import create_access_token, get_current_user
@@ -15,6 +15,31 @@ from datetime import datetime, timedelta, timezone
 from app.core.config import settings
 
 router = APIRouter()
+
+@router.post("/impersonate/{user_id}", response_model=LoginResponse)
+async def impersonate_user(
+    user_id: int,
+    current_user: UserProfile = Depends(get_current_user),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection),
+):
+    """Issue a short-lived user token to an authenticated administrator."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Administrator access is required.")
+    if user_id == current_user.id:
+        raise HTTPException(status_code=422, detail="You are already signed in as this user.")
+
+    target = await UserService(conn).get_user_by_id(user_id)
+    if target.role == "admin":
+        raise HTTPException(status_code=422, detail="Administrator accounts cannot be impersonated.")
+
+    access_token = create_access_token(data={
+        "sub": str(target.id),
+        "impersonated_by": str(current_user.id),
+    })
+    expires_at = int((datetime.now(timezone.utc) + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )).timestamp())
+    return LoginResponse(token=access_token, expires_at=expires_at, user=target)
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
@@ -68,7 +93,6 @@ async def get_me(
 from pydantic import BaseModel
 from app.services.email_service import send_reset_password_email
 import secrets
-from fastapi import HTTPException
 import bcrypt
 
 class ForgotPasswordRequest(BaseModel):

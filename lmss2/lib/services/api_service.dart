@@ -60,6 +60,17 @@ class ApiService {
     }
   }
 
+  Future<LoginResponse> impersonateUser(int userId) async {
+    try {
+      final response = await _dio.post('/auth/impersonate/$userId');
+      return LoginResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final detail = data is Map ? data['detail'] : null;
+      throw Exception(detail?.toString() ?? 'Could not impersonate this user.');
+    }
+  }
+
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _dio.get('/auth/me');
     return Map<String, dynamic>.from(response.data['user'] ?? const {});
