@@ -179,6 +179,9 @@ class ApiService {
     return response.data['id'] as int;
   }
 
+  Future<void> updateTrainerChapter(int id, Map<String, dynamic> data) async =>
+      _dio.put('/trainer/chapters/$id', data: data);
+
   Future<void> deleteTrainerChapter(int id) async => _dio.delete('/trainer/chapters/$id');
 
   Future<Map<String, dynamic>> getTrainerAssignmentOptions() async {
