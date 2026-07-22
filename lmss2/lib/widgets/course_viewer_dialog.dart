@@ -73,6 +73,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
           _isLoading = false;
         });
       }
+    }
   }
 
   Future<void> _markChapterComplete(int chapterId) async {
