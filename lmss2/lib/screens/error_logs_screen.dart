@@ -176,7 +176,7 @@ class _ErrorLogsScreenState extends State<ErrorLogsScreen> {
 
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: levelColor.withOpacity(0.1),
+        backgroundColor: levelColor.withValues(alpha: 0.1),
         child: Icon(levelIcon, color: levelColor),
       ),
       title: Text(
@@ -198,7 +198,7 @@ class _ErrorLogsScreenState extends State<ErrorLogsScreen> {
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: levelColor.withOpacity(0.1),
+          color: levelColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(

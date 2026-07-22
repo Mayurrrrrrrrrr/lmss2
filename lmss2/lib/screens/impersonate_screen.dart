@@ -159,7 +159,7 @@ class _ImpersonateScreenState extends State<ImpersonateScreen> {
                             final user = impersonatableUsers[index];
                             return ListTile(
                               leading: CircleAvatar(
-                                backgroundColor: _getRoleColor(user.role).withOpacity(0.2),
+                                backgroundColor: _getRoleColor(user.role).withValues(alpha: 0.2),
                                 child: Icon(Icons.person, color: _getRoleColor(user.role)),
                               ),
                               title: Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),

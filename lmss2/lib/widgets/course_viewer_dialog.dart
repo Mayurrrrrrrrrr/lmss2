@@ -231,9 +231,13 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
             final String cType = (chapter['content_type'] ?? 'html').toString().toLowerCase();
 
             IconData typeIcon = Icons.article;
-            if (cType.contains('youtube')) typeIcon = Icons.subscriptions;
-            else if (cType.contains('video')) typeIcon = Icons.play_circle_fill;
-            else if (cType.contains('pdf')) typeIcon = Icons.picture_as_pdf;
+            if (cType.contains('youtube')) {
+              typeIcon = Icons.subscriptions;
+            } else if (cType.contains('video')) {
+              typeIcon = Icons.play_circle_fill;
+            } else if (cType.contains('pdf')) {
+              typeIcon = Icons.picture_as_pdf;
+            }
 
             return ListTile(
               selected: isSelected,

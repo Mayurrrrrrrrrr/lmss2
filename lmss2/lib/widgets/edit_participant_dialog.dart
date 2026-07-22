@@ -164,7 +164,7 @@ class _EditParticipantDialogState extends State<EditParticipantDialog> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<String>(
-                value: _selectedRole,
+                initialValue: _selectedRole,
                 decoration: const InputDecoration(labelText: 'Role', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: 'participant', child: Text('Participant / Store Employee')),

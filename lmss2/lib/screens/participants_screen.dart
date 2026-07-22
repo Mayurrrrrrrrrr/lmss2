@@ -6,7 +6,7 @@ import '../widgets/team_members_dialog.dart';
 import '../widgets/edit_participant_dialog.dart';
 
 class ParticipantsScreen extends StatefulWidget {
-  const ParticipantsScreen({Key? key}) : super(key: key);
+  const ParticipantsScreen({super.key});
 
   @override
   State<ParticipantsScreen> createState() => _ParticipantsScreenState();
@@ -130,7 +130,7 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: DataTable(
-                              headingRowColor: MaterialStateProperty.resolveWith(
+                              headingRowColor: WidgetStateProperty.resolveWith(
                                 (states) => Colors.grey.shade50
                               ),
                               dataRowMinHeight: 56,
@@ -183,7 +183,7 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
                                               context: context,
                                               builder: (context) => EditParticipantDialog(participant: p),
                                             ).then((updated) {
-                                              if (updated == true) {
+                                              if (updated == true && context.mounted) {
                                                 context.read<ParticipantsProvider>().fetchParticipants();
                                               }
                                             });

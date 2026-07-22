@@ -49,7 +49,7 @@ class _TrainerCoursesScreenState extends State<TrainerCoursesScreen> {
       if (snapshot.hasError) return Center(child: Text('Could not load courses: ${snapshot.error}'));
       final items = snapshot.data ?? const [];
       if (items.isEmpty) return const Center(child: Text('No courses yet. Create your first course.'));
-      return ListView.separated(padding: const EdgeInsets.all(20), itemCount: items.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (context, index) {
+      return ListView.separated(padding: const EdgeInsets.all(20), itemCount: items.length, separatorBuilder: (_, _) => const SizedBox(height: 10), itemBuilder: (context, index) {
         final item = items[index];
         return Card(child: ListTile(
           leading: const CircleAvatar(child: Icon(Icons.school)),
@@ -59,10 +59,10 @@ class _TrainerCoursesScreenState extends State<TrainerCoursesScreen> {
           trailing: PopupMenuButton<String>(onSelected: (action) async {
             if (action == 'edit') await _save(item);
             if (action == 'duplicate') { await _api.duplicateTrainerCourse(item['id'] as int); _reload(); }
-            if (action == 'certificate' && mounted) context.go('/trainer/courses/${item['id']}/certificate?title=${Uri.encodeComponent(item['title']?.toString() ?? '')}');
-            if (action == 'delete' && mounted) {
+            if (action == 'certificate' && context.mounted) context.go('/trainer/courses/${item['id']}/certificate?title=${Uri.encodeComponent(item['title']?.toString() ?? '')}');
+            if (action == 'delete' && context.mounted) {
               final ok = await showDialog<bool>(context: context, builder: (c) => AlertDialog(title: const Text('Delete course?'), content: const Text('The course will be moved to the recycle state.'), actions: [TextButton(onPressed:()=>Navigator.pop(c,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(c,true),child:const Text('Delete'))])) ?? false;
-              if (ok) { await _api.deleteTrainerCourse(item['id'] as int); _reload(); }
+              if (ok) { await _api.deleteTrainerCourse(item['id'] as int); if (mounted) _reload(); }
             }
           }, itemBuilder: (_) => const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'certificate',child:Text('Certificate design')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
         ));

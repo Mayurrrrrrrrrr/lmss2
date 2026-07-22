@@ -51,7 +51,7 @@ class _TrainerQuizzesScreenState extends State<TrainerQuizzesScreen> with Single
     if (snapshot.hasError) return Center(child: Text('Could not load quizzes: ${snapshot.error}'));
     final quizzes = snapshot.data ?? const [];
     if (quizzes.isEmpty) return const Center(child: Text('No quizzes yet. Create your first quiz.'));
-    return ListView.separated(padding: const EdgeInsets.all(20), itemCount: quizzes.length, separatorBuilder: (_, __) => const SizedBox(height: 8), itemBuilder: (context, index) {
+    return ListView.separated(padding: const EdgeInsets.all(20), itemCount: quizzes.length, separatorBuilder: (_, _) => const SizedBox(height: 8), itemBuilder: (context, index) {
       final quiz = quizzes[index];
       return Card(child: ListTile(
         leading: const CircleAvatar(child: Icon(Icons.quiz)),
