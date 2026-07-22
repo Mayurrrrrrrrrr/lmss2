@@ -61,7 +61,7 @@ class _TrainerCourseBuilderScreenState extends State<TrainerCourseBuilderScreen>
                           leading: const Icon(Icons.description),
                           title: Text(chapter['title']?.toString() ?? ''),
                           subtitle: Text(chapter['content_type']?.toString().toUpperCase() ?? ''),
-                          trailing: Wrap(mainAxisSize:MainAxisSize.min,children:[IconButton(tooltip:'Edit chapter',icon:const Icon(Icons.edit_outlined),onPressed:()=>_chapterDialog(module['id'] as int,chapter)),IconButton(tooltip:'Delete chapter',icon: const Icon(Icons.delete_outline),onPressed: () async { await _api.deleteTrainerChapter(chapter['id'] as int); _reload(); })]),
+                          trailing: Wrap(children:[IconButton(tooltip:'Edit chapter',icon:const Icon(Icons.edit_outlined),onPressed:()=>_chapterDialog(module['id'] as int,chapter)),IconButton(tooltip:'Delete chapter',icon: const Icon(Icons.delete_outline),onPressed: () async { await _api.deleteTrainerChapter(chapter['id'] as int); _reload(); })]),
                         )),
                         ListTile(leading: const Icon(Icons.add), title: const Text('Add chapter'), onTap: () => _chapterDialog(module['id'] as int)),
                         ListTile(leading: const Icon(Icons.delete_outline), title: const Text('Delete module'), onTap: () async { await _api.deleteTrainerModule(module['id'] as int); _reload(); }),
