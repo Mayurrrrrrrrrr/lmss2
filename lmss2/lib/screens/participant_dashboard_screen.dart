@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../models/participant_dashboard_response.dart';
 import '../widgets/app_sidebar.dart';
@@ -296,8 +297,6 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
   }
 
   void _downloadCertificate(Certificate cert) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Certificate download for ${cert.courseTitle} is not available yet.')),
-    );
+    context.go('/participant/certificates/${cert.id}');
   }
 }

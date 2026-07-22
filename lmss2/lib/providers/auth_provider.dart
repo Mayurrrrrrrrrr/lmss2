@@ -7,6 +7,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   String? _token;
   String? _role;
+  String? _displayName;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -15,6 +16,7 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get role => _role;
   String? get token => _token;
+  String get displayName => _displayName?.trim().isNotEmpty == true ? _displayName! : 'LMS User';
 
   AuthProvider() {
     _loadAuthStatus();
@@ -24,6 +26,7 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _token = prefs.getString('jwt_token');
     _role = prefs.getString('user_role');
+    _displayName = prefs.getString('display_name');
     
     if (_token != null && _token!.isNotEmpty) {
       _isAuthenticated = true;
@@ -41,12 +44,16 @@ class AuthProvider extends ChangeNotifier {
       
       _token = response.token;
       _role = response.userProfile['role'] as String?; // Assuming role is returned in userProfile
+      _displayName = (response.userProfile['full_name'] ?? response.userProfile['username'])?.toString();
       _isAuthenticated = true;
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', _token!);
       if (_role != null) {
         await prefs.setString('user_role', _role!);
+      }
+      if (_displayName != null) {
+        await prefs.setString('display_name', _displayName!);
       }
 
       _isLoading = false;
@@ -65,10 +72,19 @@ class AuthProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await prefs.remove('user_role');
+    await prefs.remove('display_name');
     
     _token = null;
     _role = null;
+    _displayName = null;
     _isAuthenticated = false;
+    notifyListeners();
+  }
+
+  Future<void> updateDisplayName(String value) async {
+    _displayName = value.trim();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('display_name', _displayName!);
     notifyListeners();
   }
 }

@@ -3,7 +3,14 @@ import oracledb
 from app.core.database import get_db_connection
 from app.core.security import create_access_token, get_current_user
 from app.services.user_service import UserService
-from app.schemas.user import LoginRequest, LoginResponse, MeResponse, UserProfile
+from app.schemas.user import (
+    ChangePasswordRequest,
+    LoginRequest,
+    LoginResponse,
+    MeResponse,
+    ProfileUpdateRequest,
+    UserProfile,
+)
 from datetime import datetime, timedelta, timezone
 from app.core.config import settings
 
@@ -62,6 +69,7 @@ from pydantic import BaseModel
 from app.services.email_service import send_reset_password_email
 import secrets
 from fastapi import HTTPException
+import bcrypt
 
 class ForgotPasswordRequest(BaseModel):
     email: str
@@ -95,3 +103,73 @@ async def forgot_password(
             await send_reset_password_email(req.email, reset_token)
             
     return {"success": True, "message": "If the email address exists, a password reset link has been sent."}
+
+@router.put("/profile", response_model=MeResponse)
+async def update_profile(
+    profile: ProfileUpdateRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection),
+):
+    full_name = profile.full_name.strip()
+    email = profile.email.strip() if profile.email else None
+    phone = profile.phone.strip() if profile.phone else None
+    if not full_name:
+        raise HTTPException(status_code=422, detail="Full name is required.")
+
+    async with conn.cursor() as cursor:
+        if email:
+            await cursor.execute("""
+                SELECT 1 FROM users u
+                LEFT JOIN user_profiles p ON p.user_id=u.id
+                WHERE u.id<>:user_id AND (LOWER(u.email)=LOWER(:email) OR LOWER(p.email_id)=LOWER(:email))
+                FETCH FIRST 1 ROWS ONLY
+            """, user_id=current_user.id, email=email)
+            if await cursor.fetchone():
+                raise HTTPException(status_code=409, detail="That email address is already in use.")
+        await cursor.execute("""
+            MERGE INTO user_profiles p
+            USING (SELECT :user_id user_id FROM dual) src
+            ON (p.user_id = src.user_id)
+            WHEN MATCHED THEN UPDATE SET
+                p.full_name = :full_name,
+                p.email_id = :email,
+                p.mobile_number = :phone
+            WHEN NOT MATCHED THEN INSERT
+                (user_id, full_name, email_id, mobile_number)
+                VALUES (:user_id, :full_name, :email, :phone)
+        """, user_id=current_user.id, full_name=full_name, email=email, phone=phone)
+        await cursor.execute(
+            "UPDATE users SET full_name=:full_name, email=:email WHERE id=:user_id",
+            full_name=full_name,
+            email=email,
+            user_id=current_user.id,
+        )
+        await conn.commit()
+
+    refreshed = await UserService(conn).get_user_by_id(current_user.id)
+    return MeResponse(success=True, user=refreshed)
+
+@router.post("/change_password")
+async def change_password(
+    password: ChangePasswordRequest,
+    current_user: UserProfile = Depends(get_current_user),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection),
+):
+    if password.current_password == password.new_password:
+        raise HTTPException(status_code=422, detail="New password must be different from the current password.")
+
+    async with conn.cursor() as cursor:
+        await cursor.execute("SELECT password FROM users WHERE id=:user_id", user_id=current_user.id)
+        row = await cursor.fetchone()
+        if not row or not bcrypt.checkpw(password.current_password.encode("utf-8"), row[0].encode("utf-8")):
+            raise HTTPException(status_code=400, detail="Current password is incorrect.")
+
+        hashed = bcrypt.hashpw(password.new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        await cursor.execute(
+            "UPDATE users SET password=:password, is_first_login=0 WHERE id=:user_id",
+            password=hashed,
+            user_id=current_user.id,
+        )
+        await conn.commit()
+
+    return {"success": True, "message": "Password changed successfully."}

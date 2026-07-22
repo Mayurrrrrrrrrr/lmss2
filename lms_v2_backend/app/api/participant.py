@@ -29,11 +29,18 @@ class LeaderboardRank(BaseModel):
     rank: int
     points: int
 
+class CertificateSummary(BaseModel):
+    id: str
+    course_title: str
+    issue_date: str
+    download_url: str
+
 class ParticipantDashboardResponse(BaseModel):
     enrolled_courses: List[EnrolledCourse]
     available_quizzes: List[AvailableQuiz]
     recent_achievements: List[RecentAchievement]
     leaderboard_rank: LeaderboardRank
+    certificates: List[CertificateSummary]
 
 @router.get("/dashboard", response_model=ParticipantDashboardResponse)
 async def get_dashboard(
@@ -146,9 +153,38 @@ async def get_dashboard(
             
         leaderboard_rank = LeaderboardRank(rank=rank_val, points=points_val)
 
+        # 5. Certificates for fully completed assigned courses.
+        await cursor.execute("""
+            SELECT course_id, course_title, completed_at FROM (
+                SELECT c.id course_id, c.title course_title, MAX(up.completed_at) completed_at,
+                       COUNT(DISTINCT ch.id) total_chapters,
+                       COUNT(DISTINCT CASE WHEN up.is_completed=1 THEN ch.id END) completed_chapters
+                FROM courses c
+                JOIN assignments a ON a.item_type='course' AND a.item_id=c.id AND a.user_id=:user_id
+                JOIN modules m ON m.course_id=c.id AND m.deleted_at IS NULL
+                JOIN chapters ch ON ch.module_id=m.id AND ch.deleted_at IS NULL
+                LEFT JOIN user_progress up ON up.chapter_id=ch.id AND up.user_id=:user_id
+                WHERE c.deleted_at IS NULL
+                GROUP BY c.id,c.title
+            )
+            WHERE total_chapters>0 AND completed_chapters>=total_chapters
+            ORDER BY completed_at DESC NULLS LAST
+        """, user_id=user_id)
+        certificate_rows = await cursor.fetchall()
+        certificates = [
+            CertificateSummary(
+                id=str(row[0]),
+                course_title=row[1],
+                issue_date=row[2].strftime("%Y-%m-%d") if row[2] else "",
+                download_url=f"/participant/certificates/{row[0]}",
+            )
+            for row in certificate_rows
+        ]
+
         return ParticipantDashboardResponse(
             enrolled_courses=enrolled_courses,
             available_quizzes=available_quizzes,
             recent_achievements=recent_achievements,
-            leaderboard_rank=leaderboard_rank
+            leaderboard_rank=leaderboard_rank,
+            certificates=certificates,
         )

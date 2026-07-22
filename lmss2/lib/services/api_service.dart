@@ -60,6 +60,31 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getProfile() async {
+    final response = await _dio.get('/auth/me');
+    return Map<String, dynamic>.from(response.data['user'] ?? const {});
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String fullName,
+    String? email,
+    String? phone,
+  }) async {
+    final response = await _dio.put('/auth/profile', data: {
+      'full_name': fullName,
+      'email': email,
+      'phone': phone,
+    });
+    return Map<String, dynamic>.from(response.data['user'] ?? const {});
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _dio.post('/auth/change_password', data: {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+  }
+
   Future<ParticipantDashboardResponse> getParticipantDashboard() async {
     try {
       final response = await _dio.get('/participant/dashboard');

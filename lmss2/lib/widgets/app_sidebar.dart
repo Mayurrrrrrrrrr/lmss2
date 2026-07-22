@@ -21,19 +21,19 @@ class AppSidebar extends StatelessWidget {
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
                   child: Icon(Icons.person, size: 40, color: Colors.grey),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  'Admin User', // Replace with dynamic username
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  context.watch<AuthProvider>().displayName,
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ],
             ),

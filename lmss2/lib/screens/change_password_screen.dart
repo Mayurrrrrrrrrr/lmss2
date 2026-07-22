@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/app_sidebar.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -11,6 +14,7 @@ class ChangePasswordScreen extends StatefulWidget {
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  final ApiService _apiService = ApiService();
   
   final TextEditingController _currentPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
@@ -36,8 +40,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      // Placeholder until the password-change endpoint is connected.
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network request
+      await _apiService.changePassword(
+        _currentPasswordController.text,
+        _newPasswordController.text,
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +74,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       appBar: AppBar(
         title: const Text('Change Password'),
       ),
-      drawer: const AppSidebar(role: 'admin'),
+      drawer: AppSidebar(role: context.watch<AuthProvider>().role ?? 'participant'),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -119,7 +125,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) return 'Please enter a new password';
-                          if (value.length < 6) return 'Password must be at least 6 characters';
+                          if (value.length < 8) return 'Password must be at least 8 characters';
+                          if (value == _currentPasswordController.text) return 'Choose a different password';
                           return null;
                         },
                       ),

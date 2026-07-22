@@ -7,7 +7,9 @@ class LoginResponse {
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
     return LoginResponse(
       token: json['token'] ?? '',
-      userProfile: json['user_profile'] ?? {},
+      userProfile: Map<String, dynamic>.from(
+        json['user'] ?? json['user_profile'] ?? const {},
+      ),
     );
   }
 }

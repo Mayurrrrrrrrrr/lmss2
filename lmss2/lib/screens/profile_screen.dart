@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/app_sidebar.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -11,6 +14,9 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _isLoadingProfile = true;
+  String? _loadError;
+  final ApiService _apiService = ApiService();
   
   late TextEditingController _nameController;
   late TextEditingController _emailController;
@@ -19,9 +25,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: 'Admin User');
-    _emailController = TextEditingController(text: 'admin@yuktaa.com');
-    _phoneController = TextEditingController(text: '+1234567890');
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _apiService.getProfile();
+      if (!mounted) return;
+      _nameController.text = profile['full_name']?.toString() ?? '';
+      _emailController.text = profile['email']?.toString() ?? '';
+      _phoneController.text = profile['phone']?.toString() ?? '';
+      setState(() {
+        _isLoadingProfile = false;
+        _loadError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingProfile = false;
+        _loadError = 'Unable to load your profile. Please try again.';
+      });
+    }
   }
 
   @override
@@ -40,8 +67,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      // Placeholder until the profile-update endpoint is connected.
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network request
+      final profile = await _apiService.updateProfile(
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+      );
+      if (mounted) {
+        await context.read<AuthProvider>().updateDisplayName(
+          profile['full_name']?.toString() ?? _nameController.text.trim(),
+        );
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -69,9 +104,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('My Profile'),
       ),
-      drawer: const AppSidebar(role: 'admin'),
+      drawer: AppSidebar(role: context.watch<AuthProvider>().role ?? 'participant'),
       body: Center(
-        child: SingleChildScrollView(
+        child: _isLoadingProfile
+            ? const CircularProgressIndicator()
+            : _loadError != null
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_loadError!, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 12),
+                      OutlinedButton(onPressed: _loadProfile, child: const Text('Retry')),
+                    ],
+                  )
+                : SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
