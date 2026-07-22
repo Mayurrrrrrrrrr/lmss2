@@ -47,6 +47,23 @@ class _TrainerQuizzesScreenState extends State<TrainerQuizzesScreen> with Single
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'))); }
   }
 
+  Future<void> _assignQuiz(Map<String, dynamic> quiz) async {
+    final options = await _api.getTrainerAssignmentOptions();
+    final participants = List<Map<String, dynamic>>.from(options['participants'] ?? const []);
+    final selected = <int>{};
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, update) => AlertDialog(
+      title: Text('Assign ${quiz['title'] ?? 'quiz'}'),
+      content: SizedBox(width: 520, height: 420, child: participants.isEmpty
+          ? const Center(child: Text('No active participants found.'))
+          : ListView(children: participants.map((participant) { final id=participant['id'] as int; return CheckboxListTile(value:selected.contains(id),title:Text(participant['full_name']?.toString().isNotEmpty==true?participant['full_name'].toString():participant['username'].toString()),subtitle:participant['store_code']==null?null:Text(participant['store_code'].toString()),onChanged:(value)=>update(()=>value==true?selected.add(id):selected.remove(id))); }).toList())),
+      actions: [TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:const Text('Cancel')),FilledButton(onPressed:selected.isEmpty?null:()=>Navigator.pop(dialogContext,true),child:Text('Assign to ${selected.length}'))],
+    )));
+    if (confirmed != true) return;
+    final result = await _api.assignTrainerQuiz(quiz['id'] as int, selected.toList());
+    if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('${result['assigned']} assigned, ${result['skipped']} already assigned.'))); _reload(); }
+  }
+
   Widget _quizTab() => FutureBuilder<List<Map<String, dynamic>>>(future: _quizzes, builder: (context, snapshot) {
     if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
     if (snapshot.hasError) return Center(child: Text('Could not load quizzes: ${snapshot.error}'));
@@ -67,10 +84,11 @@ class _TrainerQuizzesScreenState extends State<TrainerQuizzesScreen> with Single
               isTrainerPreview: true,
             ));
           }
+          if (action == 'assign') await _assignQuiz(quiz);
           if (action == 'edit') await _save(quiz);
           if (action == 'duplicate') { await _api.duplicateTrainerQuiz(quiz['id'] as int); _reload(); }
           if (action == 'delete') { await _api.deleteTrainerQuiz(quiz['id'] as int); _reload(); }
-        }, itemBuilder: (_) => const [PopupMenuItem(value:'preview',child:Text('Preview quiz')),PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
+        }, itemBuilder: (_) => const [PopupMenuItem(value:'preview',child:Text('Preview quiz')),PopupMenuItem(value:'assign',child:Text('Assign to participants')),PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'duplicate',child:Text('Duplicate')),PopupMenuItem(value:'delete',child:Text('Delete'))]),
       ));
     });
   });

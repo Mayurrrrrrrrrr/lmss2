@@ -184,6 +184,13 @@ class ApiService {
 
   Future<void> deleteTrainerChapter(int id) async => _dio.delete('/trainer/chapters/$id');
 
+  Future<Map<String, dynamic>> uploadTrainerContent(List<int> bytes, String filename) async {
+    final response = await _dio.post('/trainer/content/upload', data: FormData.fromMap({
+      'file': MultipartFile.fromBytes(bytes, filename: filename),
+    }));
+    return Map<String, dynamic>.from(response.data);
+  }
+
   Future<Map<String, dynamic>> getTrainerAssignmentOptions() async {
     final response = await _dio.get('/trainer/assignment-options');
     return Map<String, dynamic>.from(response.data);
@@ -226,6 +233,16 @@ class ApiService {
   Future<int> duplicateTrainerQuiz(int id) async {
     final response = await _dio.post('/trainer/quizzes/$id/duplicate');
     return response.data['id'] as int;
+  }
+
+  Future<Map<String, dynamic>> assignTrainerQuiz(int quizId, List<int> userIds) async {
+    final response = await _dio.post('/trainer/quizzes/$quizId/assign', data: {'user_ids': userIds});
+    return Map<String, dynamic>.from(response.data);
+  }
+
+  Future<List<Map<String, dynamic>>> getParticipantQuizzes() async {
+    final response = await _dio.get('/quizzes/list');
+    return List<Map<String, dynamic>>.from(response.data['quizzes'] ?? const []);
   }
 
   Future<List<Map<String, dynamic>>> getTrainerQuestions(int quizId) async {

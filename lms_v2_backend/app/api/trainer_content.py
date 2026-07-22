@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Literal
+from uuid import uuid4
 
 import oracledb
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 from app.core.database import get_db_connection
@@ -11,6 +13,9 @@ from app.schemas.user import UserProfile
 
 
 router = APIRouter()
+UPLOAD_ROOT = Path("/var/www/lms_portal/uploads/course-content")
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024
+ALLOWED_UPLOAD_EXTENSIONS = {".pdf", ".ppt", ".pptx", ".doc", ".docx", ".html", ".htm", ".txt", ".mp4", ".webm", ".mp3", ".wav", ".jpg", ".jpeg", ".png", ".gif"}
 
 
 class CourseInput(BaseModel):
@@ -42,6 +47,28 @@ class BulkAssignmentInput(BaseModel):
     user_ids: list[int] = Field(default_factory=list)
     store_codes: list[str] = Field(default_factory=list)
     manager_names: list[str] = Field(default_factory=list)
+
+
+@router.post("/content/upload", status_code=201)
+async def upload_course_content(file: UploadFile = File(...), current_user: UserProfile = Depends(require_trainer)):
+    original_name = Path(file.filename or "upload").name
+    extension = Path(original_name).suffix.lower()
+    if extension not in ALLOWED_UPLOAD_EXTENSIONS:
+        raise HTTPException(415, "Unsupported training-content file type")
+    content = await file.read(MAX_UPLOAD_SIZE + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(422, "Uploaded file is empty")
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(413, "Training-content files are limited to 50 MB")
+    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{uuid4().hex}{extension}"
+    (UPLOAD_ROOT / stored_name).write_bytes(content)
+    return {
+        "content_path": f"course-content/{stored_name}",
+        "original_name": original_name,
+        "size": len(content),
+    }
 
 
 async def _owned_course(cursor, course_id: int, user: UserProfile):

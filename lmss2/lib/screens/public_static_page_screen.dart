@@ -61,21 +61,18 @@ class _PublicStaticPageScreenState extends State<PublicStaticPageScreen> {
   @override
   Widget build(BuildContext context) {
     final String viewType = 'public-static-page-${widget.slug}';
-    final String contentHtml = _pageData?['content'] ?? '';
+    final String rawHtml = _pageData?['content'] ?? '';
+    final String contentHtml = rawHtml
+        .replaceAllMapped(RegExp(r'>rn(\s*)<'), (match) => '>\n${match.group(1) ?? ''}<')
+        .replaceAllMapped(RegExp(r'([;{}])rn(\s*)'), (match) => '${match.group(1)}\n${match.group(2) ?? ''}');
 
     if (kIsWeb && contentHtml.isNotEmpty) {
       ui_web.platformViewRegistry.registerViewFactory(
         viewType,
         (int viewId) {
-          final element = html.DivElement()
-            ..innerHtml = contentHtml
-            ..style.padding = '32px'
-            ..style.color = '#111827'
-            ..style.fontFamily = 'Roboto, sans-serif'
-            ..style.backgroundColor = '#ffffff'
-            ..style.maxWidth = '1000px'
-            ..style.margin = '0 auto'
-            ..style.overflowY = 'auto'
+          final element = html.IFrameElement()
+            ..srcdoc = contentHtml
+            ..style.border = 'none'
             ..style.width = '100%'
             ..style.height = '100%';
           return element;
@@ -104,28 +101,9 @@ class _PublicStaticPageScreenState extends State<PublicStaticPageScreen> {
                     ],
                   ),
                 )
-              : Center(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 1000),
-                    margin: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                        ),
-                      ],
-                    ),
-                    child: kIsWeb
-                        ? HtmlElementView(viewType: viewType)
-                        : SingleChildScrollView(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(contentHtml),
-                          ),
-                  ),
-                ),
+              : kIsWeb
+                  ? HtmlElementView(viewType: viewType)
+                  : SingleChildScrollView(padding: const EdgeInsets.all(24), child: Text(contentHtml)),
     );
   }
 }

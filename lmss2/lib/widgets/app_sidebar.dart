@@ -44,6 +44,7 @@ class AppSidebar extends StatelessWidget {
           if (effectiveRole == 'participant' || effectiveRole == 'area_manager') ...[
             _buildSectionHeader('Learning'),
             _buildListTile(context, Icons.menu_book, 'My Courses', '/participant/courses', currentRoute),
+            _buildListTile(context, Icons.quiz, 'My Quizzes', '/participant/quizzes', currentRoute),
             _buildListTile(context, Icons.video_camera_front, 'My Roleplays', '/participant/roleplays', currentRoute),
             _buildListTile(context, Icons.task_alt, 'My Tasks', '/participant/tasks', currentRoute),
             _buildListTile(context, Icons.emoji_events, 'Rewards & Achievements', '/participant/gamification', currentRoute),

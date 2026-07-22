@@ -15,6 +15,7 @@ import 'screens/static_pages_screen.dart';
 import 'screens/participants_screen.dart';
 import 'screens/trainer_dashboard_screen.dart';
 import 'screens/participant_dashboard_screen.dart';
+import 'screens/participant_quizzes_screen.dart';
 import 'providers/participants_provider.dart';
 import 'screens/profile_screen.dart';
 import 'screens/change_password_screen.dart';
@@ -223,6 +224,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/participant/courses',
           builder: (context, state) => const CoursesScreen(),
+        ),
+        GoRoute(
+          path: '/participant/quizzes',
+          builder: (context, state) => const ParticipantQuizzesScreen(),
         ),
         GoRoute(
           path: '/participant/courses/:courseId',

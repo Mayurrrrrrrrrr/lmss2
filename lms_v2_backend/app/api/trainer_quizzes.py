@@ -25,6 +25,10 @@ class QuizInput(BaseModel):
     quiz_badge_id: int | None = None
 
 
+class QuizAssignmentInput(BaseModel):
+    user_ids: list[int]
+
+
 class OptionInput(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
     is_correct: bool = False
@@ -144,6 +148,38 @@ async def duplicate_quiz(quiz_id: int, current_user: UserProfile = Depends(requi
             await cursor.execute("INSERT INTO options(question_id,text,is_correct) SELECT :new_question,text,is_correct FROM options WHERE question_id=:old_question", new_question=int(out_question.getvalue()[0]), old_question=old_question_id)
         await conn.commit()
         return {"id": new_quiz_id, "message": "Quiz duplicated"}
+
+
+@router.post("/quizzes/{quiz_id}/assign")
+async def assign_quiz(quiz_id: int, body: QuizAssignmentInput, current_user: UserProfile = Depends(require_trainer), conn=Depends(get_db_connection)):
+    if not body.user_ids:
+        raise HTTPException(422, "Select at least one participant")
+    async with conn.cursor() as cursor:
+        await _owned_quiz(cursor, quiz_id, current_user)
+        binds = {f"u{i}": user_id for i, user_id in enumerate(set(body.user_ids))}
+        await cursor.execute(
+            "SELECT id FROM users WHERE LOWER(role)='participant' AND id IN (" + ",".join(f":u{i}" for i in range(len(binds))) + ")",
+            binds,
+        )
+        valid_users = {int(row[0]) for row in await cursor.fetchall()}
+        assigned = skipped = 0
+        for user_id in valid_users:
+            await cursor.execute(
+                "SELECT 1 FROM assignments WHERE item_type='quiz' AND item_id=:quiz_id AND user_id=:user_id",
+                quiz_id=quiz_id,
+                user_id=user_id,
+            )
+            if await cursor.fetchone():
+                skipped += 1
+                continue
+            await cursor.execute(
+                "INSERT INTO assignments(item_type,item_id,user_id,assigned_date) VALUES('quiz',:quiz_id,:user_id,SYSTIMESTAMP)",
+                quiz_id=quiz_id,
+                user_id=user_id,
+            )
+            assigned += 1
+        await conn.commit()
+        return {"assigned": assigned, "skipped": skipped}
 
 
 @router.get("/quizzes/{quiz_id}/questions")
