@@ -11,6 +11,7 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).matchedLocation;
+    final effectiveRole = context.watch<AuthProvider>().role ?? role;
 
     return Drawer(
       child: ListView(
@@ -40,10 +41,47 @@ class AppSidebar extends StatelessWidget {
           _buildSectionHeader('Main'),
           _buildListTile(context, Icons.dashboard, 'Home', '/dashboard', currentRoute),
 
-          if (role == 'admin') ...[
+          if (effectiveRole == 'participant' || effectiveRole == 'area_manager') ...[
+            _buildSectionHeader('Learning'),
+            _buildListTile(context, Icons.menu_book, 'My Courses', '/participant/courses', currentRoute),
+            _buildListTile(context, Icons.video_camera_front, 'My Roleplays', '/participant/roleplays', currentRoute),
+            _buildListTile(context, Icons.task_alt, 'My Tasks', '/participant/tasks', currentRoute),
+            _buildListTile(context, Icons.emoji_events, 'Rewards & Achievements', '/participant/gamification', currentRoute),
+            _buildListTile(context, Icons.notifications, 'Notifications', '/participant/notifications', currentRoute),
+            _buildListTile(context, Icons.psychology, 'Daily Brain Booster', '/participant/booster', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Join Live Quiz', '/participant/live', currentRoute),
+            _buildListTile(context, Icons.auto_awesome, 'AI Learning Assistant', '/participant/ai-tools', currentRoute),
+            _buildListTile(context, Icons.search, 'Search & Information', '/participant/content', currentRoute),
+            if (effectiveRole == 'area_manager') _buildListTile(context, Icons.analytics, 'Team Reports', '/reports', currentRoute),
+          ],
+
+          if (effectiveRole == 'trainer') ...[
+            _buildSectionHeader('Training'),
+            _buildListTile(context, Icons.school, 'Course Authoring', '/trainer/courses', currentRoute),
+            _buildListTile(context, Icons.assignment_ind, 'Course Assignments', '/trainer/assignments', currentRoute),
+            _buildListTile(context, Icons.quiz, 'Quiz Authoring', '/trainer/quizzes', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Live Quizzes', '/trainer/live', currentRoute),
+            _buildListTile(context, Icons.auto_awesome, 'AI Toolkit', '/trainer/ai-tools', currentRoute),
+            _buildListTile(context, Icons.video_camera_front, 'Roleplay Tracker', '/trainer/roleplays', currentRoute),
+            _buildListTile(context, Icons.task, 'Operational Tasks', '/trainer/tasks', currentRoute),
+            _buildListTile(context, Icons.emoji_events, 'Gamification', '/trainer/gamification', currentRoute),
+            _buildListTile(context, Icons.campaign, 'Notifications', '/trainer/notifications', currentRoute),
+            _buildListTile(context, Icons.psychology, 'Brain Booster', '/trainer/booster', currentRoute),
+            _buildListTile(context, Icons.military_tech, 'Milestones & Kudos', '/trainer/milestones', currentRoute),
+            _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
+            _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
+            _buildListTile(context, Icons.integration_instructions, 'Email & AI Settings', '/trainer/integrations', currentRoute),
+          ],
+
+          if (effectiveRole == 'admin') ...[
             _buildSectionHeader('Management'),
             _buildListTile(context, Icons.group, 'Manage Users', '/admin/users', currentRoute),
             _buildListTile(context, Icons.people, 'Participants', '/admin/participants', currentRoute),
+            _buildListTile(context, Icons.analytics, 'Reports', '/reports', currentRoute),
+            _buildListTile(context, Icons.phone_android, 'App Versions', '/trainer/app-versions', currentRoute),
+            _buildListTile(context, Icons.settings_cell, 'Mobile App Configuration', '/admin/app-config', currentRoute),
+            _buildListTile(context, Icons.wifi_tethering, 'Live Quizzes', '/trainer/live', currentRoute),
+            _buildListTile(context, Icons.auto_awesome, 'AI Toolkit', '/trainer/ai-tools', currentRoute),
             _buildListTile(context, Icons.pages, 'Static Pages', '/admin/pages', currentRoute),
 
             _buildSectionHeader('Masters'),

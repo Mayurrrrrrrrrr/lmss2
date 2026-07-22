@@ -32,10 +32,10 @@ async def get_manager_dashboard(
             LEFT JOIN users u ON up.user_id = u.id AND u.role = 'participant'
             LEFT JOIN operational_tasks ot ON ot.is_active = 1 AND (ot.store_id = s.id OR ot.store_id IS NULL)
             LEFT JOIN task_completions tc ON tc.task_id = ot.id AND tc.user_id = u.id
-            WHERE ams.manager_id = :uid OR up.reporting_manager_id = :uid
+            WHERE ams.manager_id = :manager_id OR up.reporting_manager_id = :manager_id
             GROUP BY s.store_code, s.store_name
         """
-        await cursor.execute(query, uid=current_user.id)
+        await cursor.execute(query, manager_id=current_user.id)
         rows = await cursor.fetchall()
         
         stores = []

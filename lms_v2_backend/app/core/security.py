@@ -68,6 +68,8 @@ async def require_trainer_or_admin(current_user: UserProfile = Depends(get_curre
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to access this resource."
         )
+    return current_user
+
 async def require_trainer(current_user: UserProfile = Depends(get_current_user)) -> UserProfile:
     if current_user.role not in ["trainer", "admin"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires trainer privileges.")

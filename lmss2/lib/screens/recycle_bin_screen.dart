@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/app_sidebar.dart';
 
 class RecycleBinScreen extends StatefulWidget {
@@ -28,47 +29,12 @@ class _RecycleBinScreenState extends State<RecycleBinScreen> {
     });
 
     try {
-      // Mock the API data with Dio
-      final response = await _dio.get('/admin/recycle').catchError((_) {
-        return Response(
-          requestOptions: RequestOptions(path: '/admin/recycle'),
-          statusCode: 200,
-          data: [
-            {
-              'id': 101,
-              'type': 'course',
-              'title': 'Flutter Basics',
-              'trainer': 'trainer_jane',
-              'deleted_at': '2026-07-15T08:30:00Z',
-              'extra_info': ''
-            },
-            {
-              'id': 202,
-              'type': 'module',
-              'title': 'State Management',
-              'trainer': 'trainer_jane',
-              'deleted_at': '2026-07-16T12:00:00Z',
-              'extra_info': 'Course: Flutter Basics'
-            },
-            {
-              'id': 305,
-              'type': 'chapter',
-              'title': 'Provider vs Riverpod',
-              'trainer': 'trainer_bob',
-              'deleted_at': '2026-07-18T09:15:00Z',
-              'extra_info': 'Module: State Management'
-            },
-            {
-              'id': 401,
-              'type': 'quiz',
-              'title': 'Dart Syntax Quiz',
-              'trainer': 'trainer_john',
-              'deleted_at': '2026-07-19T10:05:00Z',
-              'extra_info': ''
-            },
-          ],
-        );
-      });
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+      final response = await _dio.get(
+        '/admin/recycle',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
 
       if (mounted) {
         setState(() {

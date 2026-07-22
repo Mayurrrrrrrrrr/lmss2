@@ -1,9 +1,23 @@
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/static_page_model.dart';
 
 class StaticPagesProvider with ChangeNotifier {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://lms2.yuktaa.com/api/v2/'));
+
+  StaticPagesProvider() {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final prefs = await SharedPreferences.getInstance();
+        final token = prefs.getString('jwt_token');
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        return handler.next(options);
+      },
+    ));
+  }
   
   List<StaticPageModel> _pages = [];
   bool _isLoading = false;
@@ -19,47 +33,15 @@ class StaticPagesProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Mocking the API response for now
-      await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-      
-      final mockData = [
-        {
-          'id': 1,
-          'title': 'About Us',
-          'slug': 'about-us',
-          'content': '<h1>About Us</h1><p>Welcome to our LMS platform!</p>',
-          'is_active': true,
-          'created_at': '2023-01-01T10:00:00Z'
-        },
-        {
-          'id': 2,
-          'title': 'Privacy Policy',
-          'slug': 'privacy-policy',
-          'content': '<h1>Privacy Policy</h1><p>Your data is safe with us.</p>',
-          'is_active': true,
-          'created_at': '2023-02-15T14:30:00Z'
-        },
-        {
-          'id': 3,
-          'title': 'Terms & Conditions',
-          'slug': 'terms',
-          'content': '<h1>Terms</h1><p>Please read these terms carefully before using the service.</p>',
-          'is_active': false,
-          'created_at': '2023-03-20T09:15:00Z'
-        },
-      ];
-
-      _pages = mockData.map((json) => StaticPageModel.fromJson(json)).toList();
-      
-      /* Actual API call scaffolding:
-      final response = await _dio.get('/admin/pages');
-      if (response.statusCode == 200) {
-        final List<dynamic> data = response.data['pages'] ?? response.data;
-        _pages = data.map((json) => StaticPageModel.fromJson(json)).toList();
-      } else {
-        _errorMessage = 'Failed to load static pages. Status: ${response.statusCode}';
+      final response = await _dio.get('admin/pages');
+      final dynamic rawData = response.data;
+      List<dynamic> data = [];
+      if (rawData is List) {
+        data = rawData;
+      } else if (rawData is Map && rawData.containsKey('pages')) {
+        data = rawData['pages'] as List;
       }
-      */
+      _pages = data.map((json) => StaticPageModel.fromJson(json)).toList();
     } catch (e) {
       _errorMessage = 'Failed to load static pages: $e';
     } finally {
@@ -68,21 +50,18 @@ class StaticPagesProvider with ChangeNotifier {
     }
   }
 
-  void addPage(StaticPageModel page) {
-    _pages.add(page);
-    notifyListeners();
+  Future<void> addPage(StaticPageModel page) async {
+    await _dio.post('admin/pages', data: {'title': page.title, 'slug': page.slug, 'content': page.content, 'is_active': page.isActive});
+    await fetchPages();
   }
 
-  void updatePage(StaticPageModel updatedPage) {
-    final index = _pages.indexWhere((p) => p.id == updatedPage.id);
-    if (index != -1) {
-      _pages[index] = updatedPage;
-      notifyListeners();
-    }
+  Future<void> updatePage(StaticPageModel updatedPage) async {
+    await _dio.put('admin/pages/${updatedPage.id}', data: {'title': updatedPage.title, 'slug': updatedPage.slug, 'content': updatedPage.content, 'is_active': updatedPage.isActive});
+    await fetchPages();
   }
 
-  void deletePage(int id) {
-    _pages.removeWhere((page) => page.id == id);
-    notifyListeners();
+  Future<void> deletePage(int id) async {
+    await _dio.delete('admin/pages/$id');
+    await fetchPages();
   }
 }

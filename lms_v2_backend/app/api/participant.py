@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends
 from typing import List, Optional
 from pydantic import BaseModel
 import oracledb
-from app.core.security import require_user
+from app.core.security import get_current_user
 from app.core.database import get_db_connection
+from app.schemas.user import UserProfile
 
 router = APIRouter(prefix="/participant", tags=["Participant"])
 
@@ -36,9 +37,10 @@ class ParticipantDashboardResponse(BaseModel):
 
 @router.get("/dashboard", response_model=ParticipantDashboardResponse)
 async def get_dashboard(
-    user_id: int = Depends(require_user),
+    current_user: UserProfile = Depends(get_current_user),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
+    user_id = current_user.id
     async with conn.cursor() as cursor:
         # 1. Enrolled Courses
         # Progress is calculated as (completed chapters / total chapters in course).

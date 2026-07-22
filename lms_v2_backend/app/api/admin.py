@@ -118,7 +118,10 @@ async def get_users(
             ORDER BY u.created_at DESC
         """)
         rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
+        return {"success": True, "users": [
+            {"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]}
+            for r in rows
+        ]}
 
 @router.get("/participants")
 async def get_participants(
@@ -127,18 +130,76 @@ async def get_participants(
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
+            SELECT u.id, u.username, p.full_name, u.role, u.created_at,
+                   p.store_code, p.city, p.designation, p.department,
+                   (SELECT COUNT(*) FROM user_profiles sub WHERE sub.reporting_manager_id = u.id)
             FROM users u
             LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.role = 
-'
-participant
-'
-
+            WHERE u.role IN ('participant', 'area_manager')
             ORDER BY u.created_at DESC
         """)
         rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
+        return {"success": True, "participants": [
+            {
+                "id": r[0], "username": r[1], "full_name": r[2] or "",
+                "role": r[3], "created_at": r[4], "store_code": r[5] or "",
+                "city": r[6] or "", "designation": r[7] or "",
+                "department": r[8] or "", "subordinate_count": int(r[9] or 0)
+            }
+            for r in rows
+        ]}
+
+@router.put("/participants/{user_id}")
+async def update_participant(
+    user_id: int,
+    payload: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    role = str(payload.get("role", "participant")).lower()
+    if role not in {"participant", "area_manager"}:
+        raise HTTPException(status_code=400, detail="Role must be participant or area_manager")
+    async with conn.cursor() as cursor:
+        await cursor.execute(
+            "UPDATE users SET role=:role WHERE id=:user_id AND role IN ('participant','area_manager')",
+            role=role, user_id=user_id,
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Participant not found")
+        await cursor.execute("""
+            MERGE INTO user_profiles p
+            USING (SELECT :user_id user_id FROM dual) src
+            ON (p.user_id=src.user_id)
+            WHEN MATCHED THEN UPDATE SET
+                full_name=:full_name, store_code=:store_code, city=:city,
+                designation=:designation, department=:department
+            WHEN NOT MATCHED THEN INSERT
+                (user_id,full_name,store_code,city,designation,department)
+            VALUES (:user_id,:full_name,:store_code,:city,:designation,:department)
+        """, user_id=user_id, full_name=payload.get("full_name"),
+             store_code=payload.get("store_code"), city=payload.get("city"),
+             designation=payload.get("designation"), department=payload.get("department"))
+        await conn.commit()
+    return {"success": True}
+
+@router.get("/participants/{manager_id}/team")
+async def get_team_members(
+    manager_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT u.id,u.username,p.full_name,u.role,p.store_code,p.city,p.designation,p.department
+            FROM users u JOIN user_profiles p ON p.user_id=u.id
+            WHERE p.reporting_manager_id=:manager_id ORDER BY p.full_name
+        """, manager_id=manager_id)
+        rows = await cursor.fetchall()
+    return {"success": True, "participants": [
+        {"id": r[0], "username": r[1], "full_name": r[2] or "", "role": r[3],
+         "store_code": r[4] or "", "city": r[5] or "", "designation": r[6] or "",
+         "department": r[7] or ""} for r in rows
+    ]}
 
 @router.get("/stores")
 async def get_stores(
@@ -146,9 +207,15 @@ async def get_stores(
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, store_code, store_name, state, city, created_at FROM stores ORDER BY id")
+        await cursor.execute("SELECT id, store_code, store_name, city, created_at FROM stores ORDER BY id")
         rows = await cursor.fetchall()
-        return [{"id": r[0], "store_code": r[1], "store_name": r[2], "state": r[3], "city": r[4], "created_at": r[5]} for r in rows]
+        return {"success": True, "stores": [
+            {
+                "id": r[0], "store_code": r[1], "store_name": r[2],
+                "city": r[3], "location": r[3], "created_at": r[4]
+            }
+            for r in rows
+        ]}
 
 @router.get("/designations")
 async def get_designations(
@@ -158,7 +225,10 @@ async def get_designations(
     async with conn.cursor() as cursor:
         await cursor.execute("SELECT id, designation_name, created_at FROM designations ORDER BY id")
         rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
+        return {"success": True, "designations": [
+            {"id": r[0], "designation_name": r[1], "name": r[1], "created_at": r[2]}
+            for r in rows
+        ]}
 
 @router.get("/departments")
 async def get_departments(
@@ -168,66 +238,174 @@ async def get_departments(
     async with conn.cursor() as cursor:
         await cursor.execute("SELECT id, department_name, created_at FROM departments ORDER BY id")
         rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
+        return {"success": True, "departments": [
+            {"id": r[0], "department_name": r[1], "name": r[1], "created_at": r[2]}
+            for r in rows
+        ]}
+
+@router.get("/pages")
+async def get_pages(
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("SELECT id, url_slug, title, html_content, is_public, created_at FROM static_pages ORDER BY id")
+        rows = await cursor.fetchall()
+        return [{"id": r[0], "slug": r[1], "title": r[2], "content": str(r[3]), "is_active": bool(r[4]), "created_at": r[5]} for r in rows]
+
+@router.get("/page_content")
+async def get_public_page(
+    slug: str,
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("""
+            SELECT id,url_slug,title,html_content,is_public,created_at
+            FROM static_pages
+            WHERE (url_slug=:slug OR TO_CHAR(id)=:slug) AND is_public=1
+        """, slug=slug)
+        row = await cursor.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Public page not found")
+    return {"success": True, "page": {
+        "id": row[0], "slug": row[1], "title": row[2],
+        "content": str(row[3]) if row[3] else "", "is_public": True,
+        "created_at": row[5],
+    }}
 
 
-@router.get("/users")
-async def get_users(
+@router.post("/pages")
+async def create_page(
+    page: dict,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        # Get next ID
+        await cursor.execute("SELECT NVL(MAX(id), 0) + 1 FROM static_pages")
+        next_id = (await cursor.fetchone())[0]
+        await cursor.execute("""
+            INSERT INTO static_pages (id, url_slug, title, html_content, is_public, created_by)
+            VALUES (:1, :2, :3, :4, :5, :6)
+        """, (next_id, page.get("slug"), page.get("title"), page.get("content"), 1 if page.get("is_active", True) else 0, current_user.id))
+        await conn.commit()
+        return {"success": True, "id": next_id}
+
+
+@router.put("/pages/{page_id}")
+async def update_page(
+    page_id: int,
+    page: dict,
     current_user: UserProfile = Depends(require_admin),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
-            FROM users u
-            LEFT JOIN user_profiles p ON u.id = p.user_id
-            ORDER BY u.created_at DESC
-        """)
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
+            UPDATE static_pages SET url_slug=:slug,title=:title,html_content=:content,is_public=:is_public
+            WHERE id=:page_id
+        """, slug=page.get("slug"), title=page.get("title"), content=page.get("content"),
+             is_public=1 if page.get("is_active", True) else 0, page_id=page_id)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Static page not found")
+        await conn.commit()
+        return {"success": True}
 
-@router.get("/participants")
-async def get_participants(
+
+@router.delete("/pages/{page_id}")
+async def delete_page(
+    page_id: int,
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+):
+    async with conn.cursor() as cursor:
+        await cursor.execute("DELETE FROM static_pages WHERE id=:page_id", page_id=page_id)
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Static page not found")
+        await conn.commit()
+        return {"success": True}
+
+
+@router.get("/logs")
+async def get_logs(
     current_user: UserProfile = Depends(require_admin),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
         await cursor.execute("""
-            SELECT u.id, u.username, p.full_name, u.role, u.created_at
-            FROM users u
-            LEFT JOIN user_profiles p ON u.id = p.user_id
-            WHERE u.role = 'participant'
-            ORDER BY u.created_at DESC
+            SELECT e.id, e.created_at, e.error_level, e.message, u.username
+            FROM system_errors e
+            LEFT JOIN users u ON e.user_id = u.id
+            ORDER BY e.created_at DESC
+            FETCH FIRST 50 ROWS ONLY
         """)
         rows = await cursor.fetchall()
-        return [{"id": r[0], "username": r[1], "full_name": r[2], "role": r[3], "created_at": r[4]} for r in rows]
+        return [
+            {
+                "id": r[0],
+                "timestamp": r[1],
+                "level": r[2],
+                "message": r[3],
+                "user": r[4] or "system"
+            }
+            for r in rows
+        ]
 
-@router.get("/stores")
-async def get_stores(
+
+@router.get("/recycle")
+async def get_recycle(
     current_user: UserProfile = Depends(require_admin),
     conn: oracledb.AsyncConnection = Depends(get_db_connection)
 ):
     async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, store_code, store_name, state, city, created_at FROM stores ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "store_code": r[1], "store_name": r[2], "state": r[3], "city": r[4], "created_at": r[5]} for r in rows]
+        # Courses
+        await cursor.execute("SELECT id, title, created_by, deleted_at FROM courses WHERE deleted_at IS NOT NULL")
+        courses_rows = await cursor.fetchall()
+        courses = [{"id": r[0], "type": "course", "title": r[1], "trainer": str(r[2]), "deleted_at": r[3], "extra_info": ""} for r in courses_rows]
 
-@router.get("/designations")
-async def get_designations(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
-):
-    async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, designation_name, created_at FROM designations ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
+        # Modules
+        await cursor.execute("SELECT m.id, m.title, c.title, m.deleted_at FROM modules m JOIN courses c ON m.course_id = c.id WHERE m.deleted_at IS NOT NULL")
+        modules_rows = await cursor.fetchall()
+        modules = [{"id": r[0], "type": "module", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Course: {r[2]}"} for r in modules_rows]
 
-@router.get("/departments")
-async def get_departments(
-    current_user: UserProfile = Depends(require_admin),
-    conn: oracledb.AsyncConnection = Depends(get_db_connection)
+        # Chapters
+        await cursor.execute("SELECT ch.id, ch.title, m.title, ch.deleted_at FROM chapters ch JOIN modules m ON ch.module_id = m.id WHERE ch.deleted_at IS NOT NULL")
+        chapters_rows = await cursor.fetchall()
+        chapters = [{"id": r[0], "type": "chapter", "title": r[1], "trainer": "", "deleted_at": r[3], "extra_info": f"Module: {r[2]}"} for r in chapters_rows]
+
+        return courses + modules + chapters
+
+
+import psutil
+import app.core.database as db_module
+
+@router.get("/diagnostics")
+async def get_diagnostics(
+    current_user: UserProfile = Depends(require_admin)
 ):
-    async with conn.cursor() as cursor:
-        await cursor.execute("SELECT id, department_name, created_at FROM departments ORDER BY id")
-        rows = await cursor.fetchall()
-        return [{"id": r[0], "name": r[1], "created_at": r[2]} for r in rows]
+    # Oracle pool diagnostics
+    pool_opened = 0
+    pool_busy = 0
+    if db_module._pool:
+        try:
+            pool_opened = db_module._pool.opened
+            pool_busy = db_module._pool.busy
+        except Exception:
+            pass
+
+    # CPU and memory diagnostics
+    cpu_percent = psutil.cpu_percent()
+    virtual_mem = psutil.virtual_memory()
+    
+    return {
+        "success": True,
+        "database": {
+            "status": "connected" if db_module._pool else "disconnected",
+            "opened_connections": pool_opened,
+            "busy_connections": pool_busy,
+        },
+        "system": {
+            "cpu_usage_percent": cpu_percent,
+            "memory_usage_percent": virtual_mem.percent,
+            "memory_available_mb": round(virtual_mem.available / (1024 * 1024), 2),
+        }
+    }

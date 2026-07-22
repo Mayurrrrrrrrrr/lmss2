@@ -1,7 +1,7 @@
 import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from app.core.database import _pool
+import app.core.database as database
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +13,11 @@ async def break_streaks():
     Cron to check and break user streaks if they missed yesterday.
     Ported from V1 streak_cron.php. Runs daily at 00:01.
     """
-    if not _pool:
+    if not database._pool:
         logger.warning("Database pool not available for break_streaks cron.")
         return
         
-    async with _pool.acquire() as conn:
+    async with database._pool.acquire() as conn:
         async with conn.cursor() as cursor:
             # Oracle SQL: TRUNC(SYSDATE) - 1 equates to yesterday at midnight
             query = """
@@ -40,19 +40,20 @@ async def send_daily_boosters():
     Notifies active participants about their daily booster challenge.
     Ported from V1 daily_booster_cron.php. Runs daily at 09:00 AM.
     """
-    if not _pool:
+    if not database._pool:
         logger.warning("Database pool not available for send_daily_boosters cron.")
         return
         
-    async with _pool.acquire() as conn:
+    async with database._pool.acquire() as conn:
         async with conn.cursor() as cursor:
             try:
                 # Highly optimized Oracle bulk insert avoiding individual loop execution like V1 PHP
                 bulk_insert = """
-                    INSERT INTO notifications (user_id, title, message, target_routing, created_at)
-                    SELECT id, '🧠 Daily Brain Booster Ready!', 'Answer 3 quick questions to earn up to 45 XP today!', 'daily_booster', CURRENT_TIMESTAMP
+                    INSERT INTO notifications (user_id, type, title, message, link, is_read, fcm_sent, created_at)
+                    SELECT id, 'daily_booster', 'Daily Brain Booster Ready!', 'Answer 3 quick questions to earn up to 45 XP today!', '/participant/dashboard', 0, 1, CURRENT_TIMESTAMP
                     FROM users 
-                    WHERE role = 'participant'
+                    WHERE LOWER(role) = 'participant' AND NVL(LOWER(status),'active')='active'
+                      AND NOT EXISTS (SELECT 1 FROM notifications n WHERE n.user_id=users.id AND n.type='daily_booster' AND n.created_at>=TRUNC(SYSDATE))
                 """
                 await cursor.execute(bulk_insert)
                 notified = cursor.rowcount

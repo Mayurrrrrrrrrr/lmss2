@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/app_sidebar.dart';
 
 class ErrorLogsScreen extends StatefulWidget {
@@ -28,52 +29,12 @@ class _ErrorLogsScreenState extends State<ErrorLogsScreen> {
     });
 
     try {
-      // Mock the API data with Dio
-      // We will try to fetch, but intercept/catch to provide mock data
-      final response = await _dio.get('/admin/logs').catchError((_) {
-        // Return mock data if endpoint fails
-        return Response(
-          requestOptions: RequestOptions(path: '/admin/logs'),
-          statusCode: 200,
-          data: [
-            {
-              'id': 1042,
-              'timestamp': '2026-07-19T10:23:45Z',
-              'level': 'ERROR',
-              'message': 'Failed to connect to database in module save.',
-              'user': 'trainer_jane'
-            },
-            {
-              'id': 1041,
-              'timestamp': '2026-07-19T09:12:11Z',
-              'level': 'WARNING',
-              'message': 'Slow query execution on courses table.',
-              'user': 'system'
-            },
-            {
-              'id': 1040,
-              'timestamp': '2026-07-18T16:45:00Z',
-              'level': 'ERROR',
-              'message': 'NullPointerException in Quiz evaluation logic.',
-              'user': 'trainer_bob'
-            },
-            {
-              'id': 1039,
-              'timestamp': '2026-07-18T14:30:22Z',
-              'level': 'INFO',
-              'message': 'Scheduled backup completed successfully.',
-              'user': 'system'
-            },
-            {
-              'id': 1038,
-              'timestamp': '2026-07-17T11:05:09Z',
-              'level': 'ERROR',
-              'message': 'Unauthorized access attempt to /admin/settings.',
-              'user': 'unknown'
-            },
-          ],
-        );
-      });
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token');
+      final response = await _dio.get(
+        '/admin/logs',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
 
       if (mounted) {
         setState(() {
