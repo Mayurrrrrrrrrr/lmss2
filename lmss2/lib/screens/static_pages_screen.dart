@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/static_page_model.dart';
 import '../providers/static_pages_provider.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 import '../widgets/static_page_viewer_dialog.dart';
 
 class StaticPagesScreen extends StatefulWidget {
@@ -32,20 +32,18 @@ class _StaticPagesScreenState extends State<StaticPagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const AppSidebar(role: 'admin'),
-      appBar: AppBar(
-        title: const Text('Manage Static Pages'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Pages',
-            onPressed: () {
-              context.read<StaticPagesProvider>().fetchPages();
-            },
-          ),
-        ],
-      ),
+    return LmsShell(
+      title: 'Manage Static Pages',
+      rootPage: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh Pages',
+          onPressed: () {
+            context.read<StaticPagesProvider>().fetchPages();
+          },
+        ),
+      ],
       body: Consumer<StaticPagesProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {

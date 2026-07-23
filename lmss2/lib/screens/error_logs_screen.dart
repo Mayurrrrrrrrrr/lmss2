@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 
 class ErrorLogsScreen extends StatefulWidget {
   const ErrorLogsScreen({super.key});
@@ -54,23 +54,10 @@ class _ErrorLogsScreenState extends State<ErrorLogsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Error Logs')),
-      drawer: isDesktop ? null : const AppSidebar(role: 'admin'),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(role: 'admin'),
-            ),
-          Expanded(
-            child: _buildContent(),
-          ),
-        ],
-      ),
+    return LmsShell(
+      title: 'Error Logs',
+      rootPage: true,
+      body: _buildContent(),
     );
   }
 

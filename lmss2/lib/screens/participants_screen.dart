@@ -4,6 +4,7 @@ import '../providers/participants_provider.dart';
 import '../models/participant.dart';
 import '../widgets/team_members_dialog.dart';
 import '../widgets/edit_participant_dialog.dart';
+import '../widgets/lms_shell.dart';
 
 class ParticipantsScreen extends StatefulWidget {
   const ParticipantsScreen({super.key});
@@ -37,14 +38,9 @@ class _ParticipantsScreenState extends State<ParticipantsScreen> {
           p.department.toLowerCase().contains(searchLower);
     }).toList();
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50], // Enterprise light grey background
-      appBar: AppBar(
-        title: const Text('Manage Participants'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
+    return LmsShell(
+      title: 'Manage Participants',
+      rootPage: true,
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

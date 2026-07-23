@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/department_model.dart';
 import '../providers/departments_provider.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../theme/lms_theme.dart';
 
 class DepartmentsScreen extends StatefulWidget {
   const DepartmentsScreen({super.key});
@@ -31,26 +32,15 @@ class _DepartmentsScreenState extends State<DepartmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
+    final bool isDesktop = MediaQuery.sizeOf(context).width >= LmsBreakpoints.desktop;
 
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Manage Departments')),
-      drawer: isDesktop ? null : const AppSidebar(role: 'admin'),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(role: 'admin'),
-            ),
-          Expanded(
-            child: Consumer<DepartmentsProvider>(
-              builder: (context, provider, child) {
-                return _buildMainContent(context, provider, isDesktop);
-              },
-            ),
-          ),
-        ],
+    return LmsShell(
+      title: 'Manage Departments',
+      rootPage: true,
+      body: Consumer<DepartmentsProvider>(
+        builder: (context, provider, child) {
+          return _buildMainContent(context, provider, isDesktop);
+        },
       ),
     );
   }

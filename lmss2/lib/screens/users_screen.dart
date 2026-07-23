@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../providers/users_provider.dart';
+import '../widgets/lms_shell.dart';
 
 class UsersScreen extends StatefulWidget {
   const UsersScreen({super.key});
@@ -30,19 +31,18 @@ class _UsersScreenState extends State<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Users'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh Users',
-            onPressed: () {
-              context.read<UsersProvider>().fetchUsers();
-            },
-          ),
-        ],
-      ),
+    return LmsShell(
+      title: 'Manage Users',
+      rootPage: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          tooltip: 'Refresh Users',
+          onPressed: () {
+            context.read<UsersProvider>().fetchUsers();
+          },
+        ),
+      ],
       body: Consumer<UsersProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {

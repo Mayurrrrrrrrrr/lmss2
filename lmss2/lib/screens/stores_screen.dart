@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/store_model.dart';
 import '../providers/stores_provider.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../theme/lms_theme.dart';
 
 class StoresScreen extends StatefulWidget {
   const StoresScreen({super.key});
@@ -31,26 +32,15 @@ class _StoresScreenState extends State<StoresScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
+    final bool isDesktop = MediaQuery.sizeOf(context).width >= LmsBreakpoints.desktop;
 
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Manage Stores')),
-      drawer: isDesktop ? null : const AppSidebar(role: 'admin'),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(role: 'admin'),
-            ),
-          Expanded(
-            child: Consumer<StoresProvider>(
-              builder: (context, provider, child) {
-                return _buildMainContent(context, provider, isDesktop);
-              },
-            ),
-          ),
-        ],
+    return LmsShell(
+      title: 'Manage Stores',
+      rootPage: true,
+      body: Consumer<StoresProvider>(
+        builder: (context, provider, child) {
+          return _buildMainContent(context, provider, isDesktop);
+        },
       ),
     );
   }
