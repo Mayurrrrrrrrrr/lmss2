@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
 import '../widgets/quiz_runner_dialog.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class ParticipantQuizzesScreen extends StatefulWidget {
   const ParticipantQuizzesScreen({super.key});
@@ -24,27 +26,26 @@ class _ParticipantQuizzesScreenState extends State<ParticipantQuizzesScreen> {
   void _reload() => setState(() => _quizzes = _api.getParticipantQuizzes());
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        drawer: const AppSidebar(role: 'participant'),
-        appBar: AppBar(
-          title: const Text('My Quizzes'),
-          actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
-        ),
+  Widget build(BuildContext context) => LmsShell(
+        title: 'My Quizzes',
+        rootPage: true,
+        actions: [IconButton(tooltip: 'Refresh quizzes', onPressed: _reload, icon: const Icon(Icons.refresh))],
         body: FutureBuilder<List<Map<String, dynamic>>>(
           future: _quizzes,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const LmsLoadingState(label: 'Loading your quizzes');
             }
             if (snapshot.hasError) {
-              return Center(child: Text('Could not load quizzes: ${snapshot.error}'));
+              return LmsErrorState(message: 'We could not load your quizzes.', onRetry: _reload);
             }
             final quizzes = snapshot.data ?? const [];
             if (quizzes.isEmpty) {
-              return const Center(child: Text('No quizzes have been assigned to you yet.'));
+              return const LmsEmptyState(icon: Icons.quiz_outlined, title: 'No quizzes assigned', message: 'Assigned and course-linked quizzes will appear here.');
             }
-            return ListView.separated(
-              padding: const EdgeInsets.all(20),
+            return LmsPage(title: 'Available quizzes', subtitle: 'Complete assigned assessments and review your progress.', child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: quizzes.length,
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
@@ -67,7 +68,7 @@ class _ParticipantQuizzesScreenState extends State<ParticipantQuizzesScreen> {
                   ),
                 );
               },
-            );
+            ));
           },
         ),
       );

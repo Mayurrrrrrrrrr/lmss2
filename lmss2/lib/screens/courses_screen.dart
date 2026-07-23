@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 
 import '../models/course_model.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -25,33 +27,22 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final desktop = MediaQuery.of(context).size.width > 800;
-    return Scaffold(
-      appBar: desktop ? null : AppBar(title: const Text('My Courses')),
-      drawer: desktop ? null : const AppSidebar(role: 'participant'),
-      body: Row(children: [
-        if (desktop) const SizedBox(width: 250, child: AppSidebar(role: 'participant')),
-        Expanded(
-          child: FutureBuilder<List<CourseSummary>>(
+    return LmsShell(
+      title: 'My Courses',
+      rootPage: true,
+      actions: [IconButton(tooltip: 'Refresh courses', onPressed: _reload, icon: const Icon(Icons.refresh))],
+      body: FutureBuilder<List<CourseSummary>>(
             future: _courses,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const LmsLoadingState(label: 'Loading your courses');
               }
               if (snapshot.hasError) {
-                return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Text('Unable to load courses: ${snapshot.error}'),
-                  const SizedBox(height: 12),
-                  FilledButton(onPressed: _reload, child: const Text('Retry')),
-                ]));
+                return LmsErrorState(message: 'We could not load your assigned courses.', onRetry: _reload);
               }
               final courses = snapshot.data ?? const [];
-              if (courses.isEmpty) return const Center(child: Text('No courses are assigned to you.'));
-              return ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  const Text('My Courses', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
+              if (courses.isEmpty) return const LmsEmptyState(icon: Icons.menu_book_outlined, title: 'No courses assigned', message: 'New courses will appear here when your trainer assigns them.');
+              return LmsPage(title: 'Continue learning', subtitle: '${courses.length} assigned ${courses.length == 1 ? 'course' : 'courses'}', child: Column(children: [
                   ...courses.map((course) => Card(
                         margin: const EdgeInsets.only(bottom: 14),
                         child: ListTile(
@@ -72,12 +63,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           onTap: () => context.go('/participant/courses/${course.id}'),
                         ),
                       )),
-                ],
-              );
+                ]));
             },
           ),
-        ),
-      ]),
     );
   }
 }

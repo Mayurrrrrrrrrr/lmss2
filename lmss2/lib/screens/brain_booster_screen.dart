@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class BrainBoosterScreen extends StatefulWidget {
   const BrainBoosterScreen({super.key});
@@ -26,17 +28,17 @@ class _BrainBoosterScreenState extends State<BrainBoosterScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'participant'),
-    appBar: AppBar(title: const Text('Daily Brain Booster'), actions: [IconButton(onPressed: reload, icon: const Icon(Icons.refresh))]),
+  Widget build(BuildContext context) => LmsShell(
+    title: 'Daily Brain Booster',
+    rootPage: true,
+    actions: [IconButton(tooltip: 'Refresh booster', onPressed: reload, icon: const Icon(Icons.refresh))],
     body: FutureBuilder<Map<String, dynamic>>(future: data, builder: (context, snapshot) {
-      if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-      if (snapshot.hasError) return Center(child: Text('Could not load booster: ${snapshot.error}'));
+      if (snapshot.connectionState != ConnectionState.done) return const LmsLoadingState(label: 'Loading today’s booster');
+      if (snapshot.hasError) return LmsErrorState(message: 'We could not load today’s booster.', onRetry: reload);
       final booster = snapshot.data!;
-      if (booster['available'] != true) return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('⚡', style: TextStyle(fontSize: 64)), const Text('Today’s booster is complete!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)), Text('Score ${booster['score'] ?? 0}/3 • +${booster['xp_earned'] ?? 0} XP'), const Text('Come back tomorrow for another challenge.')]));
+      if (booster['available'] != true) return LmsEmptyState(icon: Icons.bolt, title: 'Today’s booster is complete', message: 'Score ${booster['score'] ?? 0}/3 • +${booster['xp_earned'] ?? 0} XP. Come back tomorrow for another challenge.');
       final questions = List<Map<String, dynamic>>.from(booster['questions'] ?? const []);
-      return ListView(padding: const EdgeInsets.all(20), children: [
-        const Text('Answer three questions to earn up to 45 XP.', style: TextStyle(fontSize: 18)),
+      return LmsPage(title: 'Three quick questions', subtitle: 'Build your streak and earn up to 45 XP.', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         ...questions.asMap().entries.map((entry) {
           final question = entry.value;
           final id = question['id'] as int;
@@ -47,7 +49,7 @@ class _BrainBoosterScreenState extends State<BrainBoosterScreen> {
           ])));
         }),
         Align(alignment: Alignment.centerRight, child: FilledButton.icon(onPressed: answers.length == questions.length ? submit : null, icon: const Icon(Icons.bolt), label: const Text('Submit answers'))),
-      ]);
+      ]));
     }),
   );
 }

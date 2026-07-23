@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/course_model.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final int courseId;
@@ -84,26 +86,20 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final desktop = MediaQuery.of(context).size.width > 800;
-    return Scaffold(
-      appBar: desktop ? null : AppBar(title: const Text('Course')),
-      drawer: desktop ? null : const AppSidebar(role: 'participant'),
-      body: Row(children: [
-        if (desktop) const SizedBox(width: 250, child: AppSidebar(role: 'participant')),
-        Expanded(
-          child: FutureBuilder<CourseDetail>(
+    return LmsShell(
+      title: 'Course',
+      actions: [IconButton(tooltip: 'Refresh course', onPressed: _reload, icon: const Icon(Icons.refresh))],
+      body: FutureBuilder<CourseDetail>(
             future: _course,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const LmsLoadingState(label: 'Loading course');
               }
               if (snapshot.hasError) {
-                return Center(child: Text('Unable to load course: ${snapshot.error}'));
+                return LmsErrorState(message: 'We could not load this course.', onRetry: _reload);
               }
               final course = snapshot.data!;
-              return ListView(padding: const EdgeInsets.all(24), children: [
-                Text(course.title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                if (course.description.isNotEmpty) ...[const SizedBox(height: 8), Text(course.description)],
+              return LmsPage(title: course.title, subtitle: course.description.isEmpty ? null : course.description, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 const SizedBox(height: 16),
                 LinearProgressIndicator(value: course.overallProgress / 100),
                 const SizedBox(height: 6),
@@ -131,14 +127,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                       leading: const Icon(Icons.quiz),
                       title: Text(course.linkedQuiz!.title),
                       subtitle: Text('${course.linkedQuiz!.attemptCount} attempts'),
-                      trailing: const Text('Quiz migration next'),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
                   ),
-              ]);
+              ]));
             },
           ),
-        ),
-      ]),
     );
   }
 }
