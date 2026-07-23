@@ -2,7 +2,6 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.core.database import init_db_pool, close_db_pool
-from app.core.tasks import start_scheduler, stop_scheduler
 from app.core.config import settings
 from app.api.auth import router as auth_router
 from app.api.courses import router as courses_router
@@ -38,7 +37,6 @@ import app.core.database as db
 async def lifespan(app: FastAPI):
     # Initialize shared services for the application lifecycle.
     await init_db_pool()
-    start_scheduler()
 
     # Hydrate WebSocket rooms from Oracle so sessions survive restarts.
     if db._pool:
@@ -46,7 +44,6 @@ async def lifespan(app: FastAPI):
 
     yield
     # Cleanup resources on shutdown.
-    stop_scheduler()
     await close_db_pool()
 
 # Keep production API documentation disabled to reduce exposure and overhead.

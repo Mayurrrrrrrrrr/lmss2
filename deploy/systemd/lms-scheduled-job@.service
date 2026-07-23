@@ -1,0 +1,14 @@
+[Unit]
+Description=LMS scheduled job: %i
+After=network-online.target lms-backend.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/lms_v2_backend
+Environment=PYTHONPATH=/home/ubuntu/lms_v2_backend
+ExecStart=/usr/bin/flock -n /run/lock/lms-%i.lock /home/ubuntu/lms_v2_backend/venv/bin/python /home/ubuntu/lms_v2_backend/scripts/run_scheduled_job.py %i
+
+[Install]
+WantedBy=multi-user.target

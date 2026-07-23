@@ -1,0 +1,11 @@
+[Unit]
+Description=Run daily LMS streak maintenance at 00:01 IST
+
+[Timer]
+OnCalendar=*-*-* 00:01:00 Asia/Kolkata
+Persistent=true
+AccuracySec=1min
+Unit=lms-scheduled-job@break-streaks.service
+
+[Install]
+WantedBy=timers.target
