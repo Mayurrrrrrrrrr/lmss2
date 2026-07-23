@@ -56,6 +56,7 @@ import 'screens/trainer_ai_tools_screen.dart';
 import 'screens/participant_ai_tools_screen.dart';
 import 'screens/app_config_screen.dart';
 import 'screens/participant_content_screen.dart';
+import 'theme/lms_theme.dart';
 
 void main() {
   runApp(
@@ -300,11 +301,9 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'LMS Admin Dashboard',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      title: 'Firefly Learning Hub',
+      debugShowCheckedModeBanner: false,
+      theme: LmsTheme.light(),
       routerConfig: _router,
     );
   }

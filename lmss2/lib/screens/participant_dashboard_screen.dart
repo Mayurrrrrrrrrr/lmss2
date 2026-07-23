@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
 import '../models/participant_dashboard_response.dart';
-import '../widgets/app_sidebar.dart';
 import '../widgets/course_viewer_dialog.dart';
 import '../widgets/quiz_runner_dialog.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class ParticipantDashboardScreen extends StatefulWidget {
   const ParticipantDashboardScreen({super.key});
@@ -25,55 +27,32 @@ class _ParticipantDashboardScreenState extends State<ParticipantDashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Participant Dashboard')),
-      drawer: isDesktop ? null : const AppSidebar(role: 'participant'),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(role: 'participant'),
-            ),
-          Expanded(
-            child: FutureBuilder<ParticipantDashboardResponse>(
+    return LmsShell(
+      title: 'My Dashboard',
+      rootPage: true,
+      body: FutureBuilder<ParticipantDashboardResponse>(
               future: _dashboardFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const LmsLoadingState(label: 'Loading your dashboard');
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return LmsErrorState(message: 'We could not load your learning dashboard.', onRetry: () => setState(() => _dashboardFuture = _apiService.getParticipantDashboard()));
                 } else if (snapshot.hasData) {
                   return _buildDashboardContent(snapshot.data!);
                 }
-                return const Center(child: Text('No data available'));
+                return const LmsEmptyState(icon: Icons.dashboard_outlined, title: 'Nothing to show yet', message: 'Your assigned learning will appear here.');
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildDashboardContent(ParticipantDashboardResponse data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+    return LmsPage(
+      title: 'My learning',
+      subtitle: 'Continue courses, complete quizzes, and collect certificates.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'My Dashboard',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Welcome back! Track your progress and keep learning.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          
           const Text(
             'Enrolled Courses',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

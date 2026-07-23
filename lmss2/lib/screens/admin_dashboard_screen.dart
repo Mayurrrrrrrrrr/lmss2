@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/admin_dashboard_response.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -22,58 +24,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // We use a Scaffold with a Drawer and a main content area.
-    // To make it modern, we might want a persistent sidebar on large screens,
-    // but for standard flutter, a Drawer is typical. We can check screen width.
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Admin Dashboard')),
-      drawer: isDesktop ? null : const AppSidebar(),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(),
-            ),
-          Expanded(
-            child: FutureBuilder<AdminDashboardResponse>(
+    return LmsShell(
+      title: 'Administration',
+      rootPage: true,
+      body: FutureBuilder<AdminDashboardResponse>(
               future: _dashboardFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const LmsLoadingState(label: 'Loading administration dashboard');
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return LmsErrorState(message: 'We could not load the administration dashboard.', onRetry: () => setState(() => _dashboardFuture = _apiService.getAdminDashboard()));
                 } else if (snapshot.hasData) {
                   return _buildDashboardContent(snapshot.data!);
                 }
-                return const Center(child: Text('No data'));
+                return const LmsEmptyState(icon: Icons.admin_panel_settings_outlined, title: 'No administration data', message: 'System activity will appear here.');
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildDashboardContent(AdminDashboardResponse data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+    return LmsPage(
+      title: 'Portal overview',
+      subtitle: 'Users, training content, activity, and system health at a glance.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Welcome back, Admin',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Portal management and overview dashboard.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          
           if (data.stats != null) ...[
             _buildStatsGrid(data.stats!),
             const SizedBox(height: 40),

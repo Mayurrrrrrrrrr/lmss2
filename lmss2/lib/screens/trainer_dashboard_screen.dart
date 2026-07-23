@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/trainer_dashboard_response.dart';
-import '../widgets/app_sidebar.dart';
 import '../widgets/course_viewer_dialog.dart';
 import '../widgets/quiz_runner_dialog.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_page.dart';
+import '../widgets/lms_states.dart';
 
 class TrainerDashboardScreen extends StatefulWidget {
   const TrainerDashboardScreen({super.key});
@@ -24,55 +26,32 @@ class _TrainerDashboardScreenState extends State<TrainerDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
-    return Scaffold(
-      appBar: isDesktop ? null : AppBar(title: const Text('Trainer Dashboard')),
-      drawer: isDesktop ? null : const AppSidebar(role: 'trainer'),
-      body: Row(
-        children: [
-          if (isDesktop)
-            const SizedBox(
-              width: 250,
-              child: AppSidebar(role: 'trainer'),
-            ),
-          Expanded(
-            child: FutureBuilder<TrainerDashboardResponse>(
+    return LmsShell(
+      title: 'Trainer Dashboard',
+      rootPage: true,
+      body: FutureBuilder<TrainerDashboardResponse>(
               future: _dashboardFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const LmsLoadingState(label: 'Loading trainer dashboard');
                 } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return LmsErrorState(message: 'We could not load the trainer dashboard.', onRetry: () => setState(() => _dashboardFuture = _apiService.getTrainerDashboard()));
                 } else if (snapshot.hasData) {
                   return _buildDashboardContent(snapshot.data!);
                 }
-                return const Center(child: Text('No data'));
+                return const LmsEmptyState(icon: Icons.school_outlined, title: 'No training data yet', message: 'Create or assign a course to begin.');
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildDashboardContent(TrainerDashboardResponse data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+    return LmsPage(
+      title: 'Training overview',
+      subtitle: 'Manage courses, monitor participation, and prepare upcoming learning.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Trainer Dashboard',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Manage your courses, track participant progress, and view upcoming quizzes.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          const SizedBox(height: 32),
-          
           _buildMetricsGrid(data.metrics),
           const SizedBox(height: 40),
           
