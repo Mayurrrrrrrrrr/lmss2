@@ -10,7 +10,9 @@ class LmsShell extends StatelessWidget {
   final Widget body;
   final List<Widget> actions;
   final bool rootPage;
-  const LmsShell({super.key, required this.title, required this.body, this.actions = const [], this.rootPage = false});
+  final Widget? floatingActionButton;
+  final PreferredSizeWidget? appBarBottom;
+  const LmsShell({super.key, required this.title, required this.body, this.actions = const [], this.rootPage = false, this.floatingActionButton, this.appBarBottom});
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +29,13 @@ class LmsShell extends StatelessWidget {
         ),
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: actions,
+        bottom: appBarBottom,
       ),
       drawer: desktop ? null : AppSidebar(role: role),
       bottomNavigationBar: width < LmsBreakpoints.compact
           ? Builder(builder: (innerContext) => _MobileNavigation(role: role, scaffoldContext: innerContext))
           : null,
+      floatingActionButton: floatingActionButton,
       body: Row(children: [
         if (desktop) SizedBox(width: 272, child: AppSidebar(role: role)),
         Expanded(child: body),

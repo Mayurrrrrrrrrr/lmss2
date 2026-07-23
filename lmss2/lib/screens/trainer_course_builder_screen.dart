@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_states.dart';
 
 class TrainerCourseBuilderScreen extends StatefulWidget {
   final int courseId; final String title;
@@ -22,12 +23,9 @@ class _TrainerCourseBuilderScreenState extends State<TrainerCourseBuilderScreen>
     if(data==null||data['title'].toString().isEmpty||data['content_path'].toString().isEmpty)return;if(existing==null){await _api.createTrainerChapter(moduleId,data);}else{await _api.updateTrainerChapter(existing['id'] as int,data);}_reload();
   }
   @override
-  Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'trainer'),
-    appBar: AppBar(
-      title: Text(widget.title.isEmpty ? 'Course builder' : widget.title),
-      actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))],
-    ),
+  Widget build(BuildContext context) => LmsShell(
+    title: widget.title.isEmpty ? 'Course builder' : widget.title,
+    actions: [IconButton(tooltip: 'Refresh course structure', onPressed: _reload, icon: const Icon(Icons.refresh))],
     floatingActionButton: FloatingActionButton.extended(
       onPressed: _addModule,
       icon: const Icon(Icons.add),
@@ -37,9 +35,9 @@ class _TrainerCourseBuilderScreenState extends State<TrainerCourseBuilderScreen>
       future: _modules,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
+          return const LmsLoadingState(label: 'Loading course structure');
         }
-        if (snapshot.hasError) return Center(child: Text('${snapshot.error}'));
+        if (snapshot.hasError) return LmsErrorState(message: 'We could not load the course structure.', onRetry: _reload);
         final modules = snapshot.data ?? const [];
         return ListView(
           padding: const EdgeInsets.all(20),

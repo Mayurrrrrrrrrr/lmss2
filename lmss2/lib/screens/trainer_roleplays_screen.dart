@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 
 class TrainerRoleplaysScreen extends StatefulWidget {
   const TrainerRoleplaysScreen({super.key});
@@ -66,9 +66,10 @@ class _TrainerRoleplaysScreenState extends State<TrainerRoleplaysScreen> {
   }
   Color _statusColor(String value) => switch(value.toLowerCase()) {'completed'=>Colors.green,'pending'=>Colors.orange,_=>Colors.blue};
 
-  @override Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role:'trainer'),
-    appBar: AppBar(title:const Text('Roleplay Tracker'),actions:[IconButton(onPressed:_load,icon:const Icon(Icons.refresh))]),
+  @override Widget build(BuildContext context) => LmsShell(
+    title: 'Roleplay Tracker',
+    rootPage: true,
+    actions: [IconButton(tooltip: 'Refresh roleplays', onPressed:_load,icon:const Icon(Icons.refresh))],
     floatingActionButton: FloatingActionButton.extended(onPressed:_assignDialog,icon:const Icon(Icons.add),label:const Text('Assign roleplay')),
     body: _loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Text('Could not load roleplays: $_error')):ListView.builder(padding:const EdgeInsets.all(20),itemCount:_sessions.length,itemBuilder:(context,index){final item=_sessions[index];final status=item['status']?.toString()??'Assigned';return Card(child:ListTile(leading:CircleAvatar(backgroundColor:_statusColor(status),child:const Icon(Icons.video_camera_front,color:Colors.white)),title:Text(item['scenario_topic']?.toString()??''),subtitle:Text('${item['full_name']??item['username']} - ${item['week_no']} / ${item['day']}\n$status${item['observer_score']!=null?' - Score ${item['observer_score']}/5':''}'),isThreeLine:true,trailing:PopupMenuButton<String>(onSelected:(action)async{if(action=='evaluate')await _evaluate(item);if(action=='delete'){await _api.deleteTrainerRoleplay(item['id'] as int);await _load();}},itemBuilder:(_)=>[if(status.toLowerCase()=='pending')const PopupMenuItem(value:'evaluate',child:Text('Evaluate')),const PopupMenuItem(value:'delete',child:Text('Delete'))])));}),
   );

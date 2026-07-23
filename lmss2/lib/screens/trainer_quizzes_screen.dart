@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 import '../widgets/quiz_runner_dialog.dart';
 
 class TrainerQuizzesScreen extends StatefulWidget {
@@ -104,9 +104,11 @@ class _TrainerQuizzesScreenState extends State<TrainerQuizzesScreen> with Single
     }).toList());
   });
 
-  @override Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'trainer'),
-    appBar: AppBar(title: const Text('Quiz Authoring'), bottom: TabBar(controller: _tabs, tabs: const [Tab(text:'Quizzes'),Tab(text:'Retake requests')]), actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))]),
+  @override Widget build(BuildContext context) => LmsShell(
+    title: 'Quiz Authoring',
+    rootPage: true,
+    appBarBottom: TabBar(controller: _tabs, tabs: const [Tab(text:'Quizzes'),Tab(text:'Retake requests')]),
+    actions: [IconButton(tooltip: 'Refresh quizzes', onPressed: _reload, icon: const Icon(Icons.refresh))],
     floatingActionButton: FloatingActionButton.extended(onPressed: () => _save(), icon: const Icon(Icons.add), label: const Text('New quiz')),
     body: TabBarView(controller: _tabs, children: [_quizTab(), _retakeTab()]),
   );

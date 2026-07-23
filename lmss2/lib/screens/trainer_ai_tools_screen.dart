@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_states.dart';
 
 class TrainerAiToolsScreen extends StatefulWidget {
   const TrainerAiToolsScreen({super.key});
@@ -66,11 +67,11 @@ class _TrainerAiToolsScreenState extends State<TrainerAiToolsScreen> {
     final quizzes = List<Map<String, dynamic>>.from(options?['quizzes'] ?? const []);
     final people = List<Map<String, dynamic>>.from(options?['participants'] ?? const []);
     final stores = List<String>.from(options?['store_codes'] ?? const []);
-    return Scaffold(
-      drawer: const AppSidebar(role: 'trainer'),
-      appBar: AppBar(title: const Text('AI Toolkit')),
+    return LmsShell(
+      title: 'AI Toolkit',
+      rootPage: true,
       body: options == null && error == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const LmsLoadingState(label: 'Loading AI tools')
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [

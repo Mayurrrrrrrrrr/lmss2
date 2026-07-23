@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_states.dart';
 
 class TrainerLiveScreen extends StatefulWidget {
   const TrainerLiveScreen({super.key});
@@ -26,22 +27,20 @@ class _TrainerLiveScreenState extends State<TrainerLiveScreen>{
   }
   Future<void> remove(int id)async{await api.deleteLiveSession(id);await load();}
   @override
-  Widget build(BuildContext context) => Scaffold(
-        drawer: const AppSidebar(role: 'trainer'),
-        appBar: AppBar(
-          title: const Text('Live Quizzes'),
-          actions: [
+  Widget build(BuildContext context) => LmsShell(
+        title: 'Live Quizzes',
+        rootPage: true,
+        actions: [
             IconButton(onPressed: load, icon: const Icon(Icons.refresh)),
             IconButton(onPressed: create, icon: const Icon(Icons.add)),
           ],
-        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: create,
           icon: const Icon(Icons.play_arrow),
           label: const Text('Start session'),
         ),
         body: loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const LmsLoadingState(label: 'Loading live quizzes')
             : error != null
                 ? Center(
                     child: Column(
@@ -54,7 +53,7 @@ class _TrainerLiveScreenState extends State<TrainerLiveScreen>{
                     ),
                   )
                 : sessions.isEmpty
-                    ? const Center(child: Text('No live sessions yet. Start one when your learners are ready.'))
+                    ? LmsEmptyState(icon: Icons.wifi_tethering, title: 'No live sessions yet', message: 'Start a live quiz when your participants are ready.', action: FilledButton.icon(onPressed: create, icon: const Icon(Icons.play_arrow), label: const Text('Start session')))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: sessions.length,

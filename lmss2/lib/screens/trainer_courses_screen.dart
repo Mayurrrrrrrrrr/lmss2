@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_states.dart';
 import '../widgets/course_viewer_dialog.dart';
 
 class TrainerCoursesScreen extends StatefulWidget {
@@ -41,15 +42,16 @@ class _TrainerCoursesScreenState extends State<TrainerCoursesScreen> {
     catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'))); }
   }
 
-  @override Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'trainer'),
-    appBar: AppBar(title: const Text('Course Authoring'), actions: [IconButton(onPressed: _reload, icon: const Icon(Icons.refresh))]),
+  @override Widget build(BuildContext context) => LmsShell(
+    title: 'Course Authoring',
+    rootPage: true,
+    actions: [IconButton(tooltip: 'Refresh courses', onPressed: _reload, icon: const Icon(Icons.refresh))],
     floatingActionButton: FloatingActionButton.extended(onPressed: () => _save(), icon: const Icon(Icons.add), label: const Text('New course')),
     body: FutureBuilder<List<Map<String, dynamic>>>(future: _courses, builder: (context, snapshot) {
-      if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-      if (snapshot.hasError) return Center(child: Text('Could not load courses: ${snapshot.error}'));
+      if (snapshot.connectionState != ConnectionState.done) return const LmsLoadingState(label: 'Loading courses');
+      if (snapshot.hasError) return LmsErrorState(message: 'We could not load your courses.', onRetry: _reload);
       final items = snapshot.data ?? const [];
-      if (items.isEmpty) return const Center(child: Text('No courses yet. Create your first course.'));
+      if (items.isEmpty) return LmsEmptyState(icon: Icons.school_outlined, title: 'Create your first course', message: 'Build modules, upload chapters, and assign the completed course to participants.', action: FilledButton.icon(onPressed: () => _save(), icon: const Icon(Icons.add), label: const Text('New course')));
       return ListView.separated(padding: const EdgeInsets.all(20), itemCount: items.length, separatorBuilder: (_, _) => const SizedBox(height: 10), itemBuilder: (context, index) {
         final item = items[index];
         return Card(child: ListTile(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 
 class TrainerTasksScreen extends StatefulWidget {
   const TrainerTasksScreen({super.key});
@@ -41,9 +41,11 @@ class _TrainerTasksScreenState extends State<TrainerTasksScreen> with SingleTick
   }
 
   Future<void> _review(Map<String, dynamic> item, String status) async { await _api.reviewTaskCompletion(item['id'] as int, status); await _load(); }
-  @override Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'trainer'),
-    appBar: AppBar(title: const Text('Operational Tasks'), bottom: TabBar(controller: _tabs, tabs: [const Tab(text: 'Tasks'), Tab(text: 'Pending review (${_pending.length})')]), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
+  @override Widget build(BuildContext context) => LmsShell(
+    title: 'Operational Tasks',
+    rootPage: true,
+    appBarBottom: TabBar(controller: _tabs, tabs: [const Tab(text: 'Tasks'), Tab(text: 'Pending review (${_pending.length})')]),
+    actions: [IconButton(tooltip: 'Refresh tasks', onPressed: _load, icon: const Icon(Icons.refresh))],
     floatingActionButton: FloatingActionButton.extended(onPressed: _create, icon: const Icon(Icons.add), label: const Text('Create task')),
     body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null ? Center(child: Text('Could not load tasks: $_error')) : TabBarView(controller: _tabs, children: [
       _tasks.isEmpty ? const Center(child: Text('No tasks created.')) : ListView.builder(padding: const EdgeInsets.all(20), itemCount: _tasks.length, itemBuilder: (context, i) { final task = _tasks[i]; return Card(child: ListTile(leading: CircleAvatar(child: Icon(task['verification_type'] == 'photo' ? Icons.photo_camera : Icons.notes)), title: Text(task['title']?.toString() ?? ''), subtitle: Text('${task['assignment_count'] ?? 0} assigned • ${task['verification_type']} verification'), trailing: IconButton(tooltip: 'Delete', icon: const Icon(Icons.delete_outline), onPressed: () async { await _api.deleteTask(task['id'] as int); await _load(); }))); }),

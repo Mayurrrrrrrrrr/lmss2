@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
+import '../widgets/lms_states.dart';
 
 class TrainerAssignmentsScreen extends StatefulWidget {
   const TrainerAssignmentsScreen({super.key});
@@ -72,10 +73,11 @@ class _TrainerAssignmentsScreenState extends State<TrainerAssignmentsScreen> {
     }).toList()),
   );
 
-  @override Widget build(BuildContext context) => Scaffold(
-    drawer: const AppSidebar(role: 'trainer'),
-    appBar: AppBar(title: const Text('Course Assignments'), actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))]),
-    body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null ? Center(child: Text('Could not load assignments: $_error')) : ListView(padding: const EdgeInsets.all(20), children: [
+  @override Widget build(BuildContext context) => LmsShell(
+    title: 'Course Assignments',
+    rootPage: true,
+    actions: [IconButton(tooltip: 'Refresh assignments', onPressed: _load, icon: const Icon(Icons.refresh))],
+    body: _loading ? const LmsLoadingState(label: 'Loading assignments') : _error != null ? LmsErrorState(message: 'We could not load course assignments.', onRetry: _load) : ListView(padding: const EdgeInsets.all(20), children: [
       Text('Assign courses', style: Theme.of(context).textTheme.headlineSmall), const SizedBox(height: 12),
       Card(child: Padding(padding: const EdgeInsets.all(16), child: LayoutBuilder(builder: (context, box) {
         final narrow = box.maxWidth < 760;
