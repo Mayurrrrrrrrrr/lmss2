@@ -9,6 +9,7 @@ class AuthProvider extends ChangeNotifier {
   String? _role;
   String? _displayName;
   bool _isImpersonating = false;
+  bool _isInitialized = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -19,22 +20,27 @@ class AuthProvider extends ChangeNotifier {
   String? get token => _token;
   String get displayName => _displayName?.trim().isNotEmpty == true ? _displayName! : 'LMS User';
   bool get isImpersonating => _isImpersonating;
+  bool get isInitialized => _isInitialized;
 
   AuthProvider() {
     _loadAuthStatus();
   }
 
   Future<void> _loadAuthStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('jwt_token');
-    _role = prefs.getString('user_role');
-    _displayName = prefs.getString('display_name');
-    _isImpersonating = prefs.getBool('is_impersonating') ?? false;
-    
-    if (_token != null && _token!.isNotEmpty) {
-      _isAuthenticated = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _token = prefs.getString('jwt_token');
+      _role = prefs.getString('user_role');
+      _displayName = prefs.getString('display_name');
+      _isImpersonating = prefs.getBool('is_impersonating') ?? false;
+
+      if (_token != null && _token!.isNotEmpty) {
+        _isAuthenticated = true;
+      }
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<bool> login(String username, String password, {String appVersion = '1.0.0'}) async {

@@ -95,15 +95,46 @@ class _MyAppState extends State<MyApp> {
       initialLocation: '/',
       refreshListenable: authProvider,
       redirect: (context, state) {
+        if (!authProvider.isInitialized) {
+          return null;
+        }
+
         final isAuthenticated = authProvider.isAuthenticated;
         final isLoginRoute = state.matchedLocation == '/';
         final isPublicPage = state.matchedLocation.startsWith('/pages/');
+        final path = state.matchedLocation;
+        final role = authProvider.role;
 
         if (!isAuthenticated && !isLoginRoute && !isPublicPage) {
           return '/';
         }
 
         if (isAuthenticated && isLoginRoute) {
+          return '/dashboard';
+        }
+
+        if (!isAuthenticated || isPublicPage) {
+          return null;
+        }
+
+        if (path.startsWith('/admin/') && role != 'admin') {
+          return '/dashboard';
+        }
+
+        if (path.startsWith('/trainer/') && role != 'trainer' && role != 'admin') {
+          return '/dashboard';
+        }
+
+        if (path.startsWith('/participant/') &&
+            role != 'participant' &&
+            role != 'area_manager') {
+          return '/dashboard';
+        }
+
+        if (path == '/reports' &&
+            role != 'admin' &&
+            role != 'trainer' &&
+            role != 'area_manager') {
           return '/dashboard';
         }
 

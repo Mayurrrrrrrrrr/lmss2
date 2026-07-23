@@ -11,7 +11,12 @@ class AppSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).matchedLocation;
-    final effectiveRole = context.watch<AuthProvider>().role ?? role;
+    final auth = context.watch<AuthProvider>();
+    final effectiveRole = auth.role ?? role;
+    final roleLabel = effectiveRole
+        .split('_')
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
 
     return Drawer(
       child: ListView(
@@ -32,19 +37,35 @@ class AppSidebar extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  context.watch<AuthProvider>().displayName,
-                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  auth.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  roleLabel,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
           ),
-          if (context.watch<AuthProvider>().isImpersonating)
+          if (auth.isImpersonating)
             Material(
               color: Colors.amber.shade100,
               child: ListTile(
                 leading: const Icon(Icons.visibility, color: Colors.deepOrange),
                 title: const Text('Impersonation active'),
-                subtitle: Text('Viewing as ${context.watch<AuthProvider>().displayName}'),
+                subtitle: Text('Viewing as ${auth.displayName}'),
+                titleTextStyle: Theme.of(context).textTheme.titleSmall,
+                subtitleTextStyle: Theme.of(context).textTheme.bodySmall,
                 trailing: const Icon(Icons.close),
                 onTap: () async {
                   await context.read<AuthProvider>().stopImpersonating();
@@ -118,8 +139,9 @@ class AppSidebar extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Sign Out', style: TextStyle(color: Colors.red)),
-            onTap: () {
-              context.read<AuthProvider>().logout();
+            onTap: () async {
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) context.go('/');
             },
           ),
         ],
@@ -142,20 +164,35 @@ class AppSidebar extends StatelessWidget {
   }
 
   Widget _buildListTile(BuildContext context, IconData icon, String title, String route, String currentRoute) {
-    final isActive = currentRoute == route;
-    return ListTile(
-      leading: Icon(icon, color: isActive ? Colors.blue : Colors.black54),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isActive ? Colors.blue : Colors.black87,
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+    final isActive = currentRoute == route || currentRoute.startsWith('$route/');
+    return Semantics(
+      button: true,
+      selected: isActive,
+      label: title,
+      child: Tooltip(
+        message: title,
+        waitDuration: const Duration(milliseconds: 700),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: isActive ? Theme.of(context).colorScheme.primary : Colors.black54,
+          ),
+          title: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isActive ? Theme.of(context).colorScheme.primary : Colors.black87,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.normal,
+            ),
+          ),
+          selected: isActive,
+          selectedTileColor: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.45),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          onTap: () => context.go(route),
         ),
       ),
-      selected: isActive,
-      onTap: () {
-        context.go(route);
-      },
     );
   }
 }
