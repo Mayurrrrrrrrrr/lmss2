@@ -12,7 +12,7 @@ import app.core.database as database
 logger = logging.getLogger(__name__)
 
 
-async def break_streaks() -> int:
+async def break_streaks(dry_run: bool = False) -> int:
     """Reset streaks whose owner did not record activity yesterday."""
     if not database._pool:
         raise RuntimeError("Database pool is not available")
@@ -26,8 +26,12 @@ async def break_streaks() -> int:
                       AND last_activity_date < (TRUNC(SYSDATE) - 1)
                 """)
                 affected = int(cursor.rowcount or 0)
-                await conn.commit()
-                logger.info("Streak maintenance completed: %s reset", affected)
+                if dry_run:
+                    await conn.rollback()
+                    logger.info("Streak maintenance dry-run: %s would be reset", affected)
+                else:
+                    await conn.commit()
+                    logger.info("Streak maintenance completed: %s reset", affected)
                 return affected
             except Exception:
                 await conn.rollback()
@@ -35,7 +39,7 @@ async def break_streaks() -> int:
                 raise
 
 
-async def send_daily_boosters() -> int:
+async def send_daily_boosters(dry_run: bool = False) -> int:
     """Create one in-app booster reminder per active participant per day."""
     if not database._pool:
         raise RuntimeError("Database pool is not available")
@@ -60,8 +64,12 @@ async def send_daily_boosters() -> int:
                       )
                 """)
                 affected = int(cursor.rowcount or 0)
-                await conn.commit()
-                logger.info("Daily booster reminders created: %s", affected)
+                if dry_run:
+                    await conn.rollback()
+                    logger.info("Daily booster dry-run: %s would be created", affected)
+                else:
+                    await conn.commit()
+                    logger.info("Daily booster reminders created: %s", affected)
                 return affected
             except Exception:
                 await conn.rollback()

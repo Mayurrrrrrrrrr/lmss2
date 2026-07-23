@@ -9,42 +9,27 @@ import app.core.database as database
 from app.core.database import close_db_pool, init_db_pool
 
 
-TABLES = (
-    "COURSES", "MODULES", "CHAPTERS", "QUIZZES", "QUESTIONS", "OPTIONS",
-    "ASSIGNMENTS", "OPERATIONAL_TASKS", "ROLEPLAY_SESSIONS", "NOTIFICATIONS",
-)
-SEQUENCE_PATTERN = re.compile(r'"[^"]+"\."([^"]+)"\.nextval', re.IGNORECASE)
-
-
 async def main(apply: bool):
     await init_db_pool()
     results = []
     try:
         async with database._pool.acquire() as connection:
             async with connection.cursor() as cursor:
-                for table in TABLES:
-                    await cursor.execute("""
-                        SELECT data_default
-                        FROM user_tab_columns
-                        WHERE table_name=:table_name AND column_name='ID' AND identity_column='YES'
-                    """, table_name=table)
-                    row = await cursor.fetchone()
-                    if not row:
-                        results.append({"table": table, "identity": False, "action": "skipped"})
-                        continue
+                await cursor.execute("""
+                    SELECT table_name, column_name, sequence_name
+                    FROM user_tab_identity_cols
+                    WHERE table_name NOT LIKE 'BIN$%'
+                """)
+                identity_cols = await cursor.fetchall()
 
-                    default = str(row[0] or "")
-                    match = SEQUENCE_PATTERN.search(default)
-                    if not match:
-                        results.append({"table": table, "identity": True, "action": "unresolved", "default": default})
-                        continue
-                    sequence = match.group(1)
-                    await cursor.execute(f'SELECT NVL(MAX("ID"),0) FROM "{table}"')
+                for table, column, sequence in identity_cols:
+                    await cursor.execute(f'SELECT NVL(MAX("{column}"), 0) FROM "{table}"')
                     maximum = int((await cursor.fetchone())[0])
+
                     await cursor.execute("SELECT last_number FROM user_sequences WHERE sequence_name=:sequence", sequence=sequence)
                     sequence_row = await cursor.fetchone()
                     cached_next = int(sequence_row[0]) if sequence_row else None
-                    item = {"table": table, "sequence": sequence, "max_id": maximum, "dictionary_next": cached_next}
+                    item = {"table": table, "column": column, "sequence": sequence, "max_id": maximum, "dictionary_next": cached_next}
 
                     if not apply:
                         item["action"] = "audit_only"

@@ -30,34 +30,37 @@ async def ensure_history_table() -> None:
                 """)
 
 
-async def run(job_name: str) -> dict:
+async def run(job_name: str, dry_run: bool = False) -> dict:
     await init_db_pool()
     run_id = None
     try:
-        await ensure_history_table()
-        async with database._pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                run_id_var = cursor.var(int)
-                await cursor.execute("""
-                    INSERT INTO scheduled_job_runs(job_name,status,host_name)
-                    VALUES(:job_name,'running',:host_name)
-                    RETURNING id INTO :run_id
-                """, job_name=job_name, host_name=socket.gethostname(), run_id=run_id_var)
-                run_id = int(run_id_var.getvalue()[0])
-                await conn.commit()
+        if not dry_run:
+            await ensure_history_table()
+            async with database._pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    run_id_var = cursor.var(int)
+                    await cursor.execute("""
+                        INSERT INTO scheduled_job_runs(job_name,status,host_name)
+                        VALUES(:job_name,'running',:host_name)
+                        RETURNING id INTO :run_id
+                    """, job_name=job_name, host_name=socket.gethostname(), run_id=run_id_var)
+                    run_id = int(run_id_var.getvalue()[0])
+                    await conn.commit()
 
-        affected = await JOBS[job_name]()
-        async with database._pool.acquire() as conn:
-            async with conn.cursor() as cursor:
-                await cursor.execute("""
-                    UPDATE scheduled_job_runs
-                    SET status='success',finished_at=SYSTIMESTAMP,affected_rows=:affected
-                    WHERE id=:run_id
-                """, affected=affected, run_id=run_id)
-                await conn.commit()
-        return {"ok": True, "job": job_name, "run_id": run_id, "affected_rows": affected}
+        affected = await JOBS[job_name](dry_run=dry_run)
+
+        if not dry_run:
+            async with database._pool.acquire() as conn:
+                async with conn.cursor() as cursor:
+                    await cursor.execute("""
+                        UPDATE scheduled_job_runs
+                        SET status='success',finished_at=SYSTIMESTAMP,affected_rows=:affected
+                        WHERE id=:run_id
+                    """, affected=affected, run_id=run_id)
+                    await conn.commit()
+        return {"ok": True, "job": job_name, "run_id": run_id, "affected_rows": affected, "dry_run": dry_run}
     except Exception as exc:
-        if database._pool and run_id is not None:
+        if not dry_run and database._pool and run_id is not None:
             async with database._pool.acquire() as conn:
                 async with conn.cursor() as cursor:
                     await cursor.execute("""
@@ -67,7 +70,7 @@ async def run(job_name: str) -> dict:
                     """, message=str(exc)[:2000], run_id=run_id)
                     await conn.commit()
         traceback.print_exc()
-        return {"ok": False, "job": job_name, "run_id": run_id, "error": str(exc)}
+        return {"ok": False, "job": job_name, "run_id": run_id, "error": str(exc), "dry_run": dry_run}
     finally:
         await close_db_pool()
 
@@ -75,8 +78,9 @@ async def run(job_name: str) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("job", choices=sorted(JOBS))
+    parser.add_argument("--dry-run", action="store_true", help="Calculate affected rows but do not write changes")
     args = parser.parse_args()
-    result = asyncio.run(run(args.job))
+    result = asyncio.run(run(args.job, args.dry_run))
     print(json.dumps(result, indent=2))
     if not result["ok"]:
         raise SystemExit(1)
