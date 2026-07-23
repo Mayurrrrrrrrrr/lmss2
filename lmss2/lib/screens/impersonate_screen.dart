@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../models/user_model.dart';
 import '../providers/users_provider.dart';
 import '../providers/auth_provider.dart';
-import '../widgets/app_sidebar.dart';
+import '../widgets/lms_shell.dart';
 
 class ImpersonateScreen extends StatefulWidget {
   const ImpersonateScreen({super.key});
@@ -82,11 +82,8 @@ class _ImpersonateScreenState extends State<ImpersonateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Impersonate User'),
-      ),
-      drawer: const AppSidebar(role: 'admin'),
+    return LmsShell(
+      title: 'Impersonate User',
       body: Consumer<UsersProvider>(
         builder: (context, provider, child) {
           if (provider.isLoading) {

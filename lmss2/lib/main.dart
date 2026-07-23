@@ -56,6 +56,7 @@ import 'screens/trainer_ai_tools_screen.dart';
 import 'screens/participant_ai_tools_screen.dart';
 import 'screens/app_config_screen.dart';
 import 'screens/participant_content_screen.dart';
+import 'screens/scheduled_jobs_screen.dart';
 import 'theme/lms_theme.dart';
 
 void main() {
@@ -294,6 +295,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const DiagnosticsScreen(),
         ),
         GoRoute(path:'/admin/app-config',builder:(context,state)=>const AppConfigScreen()),
+        GoRoute(path:'/admin/scheduled-jobs',builder:(context,state)=>const ScheduledJobsScreen()),
       ],
     );
   }

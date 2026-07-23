@@ -76,6 +76,9 @@ class ApiService {
     return Map<String, dynamic>.from(response.data['user'] ?? const {});
   }
 
+  Future<Map<String, dynamic>> getScheduledJobs() async =>
+      Map<String, dynamic>.from((await _dio.get('/admin/scheduled-jobs')).data);
+
   Future<Map<String, dynamic>> updateProfile({
     required String fullName,
     String? email,

@@ -409,3 +409,28 @@ async def get_diagnostics(
             "memory_available_mb": round(virtual_mem.available / (1024 * 1024), 2),
         }
     }
+
+
+@router.get("/scheduled-jobs")
+async def get_scheduled_jobs(
+    current_user: UserProfile = Depends(require_admin),
+    conn: oracledb.AsyncConnection = Depends(get_db_connection),
+):
+    """Return recent singleton timer executions without assuming the history table exists."""
+    schedules = [
+        {"name": "daily-booster", "description": "Daily Brain Booster reminders", "schedule": "09:00 IST daily"},
+        {"name": "break-streaks", "description": "Streak maintenance", "schedule": "00:01 IST daily"},
+    ]
+    async with conn.cursor() as cursor:
+        await cursor.execute("SELECT COUNT(*) FROM user_tables WHERE table_name='SCHEDULED_JOB_RUNS'")
+        if int((await cursor.fetchone())[0]) == 0:
+            return {"jobs": schedules, "runs": []}
+        await cursor.execute("""
+            SELECT id,job_name,status,started_at,finished_at,affected_rows,host_name,error_message
+            FROM scheduled_job_runs
+            ORDER BY started_at DESC
+            FETCH FIRST 50 ROWS ONLY
+        """)
+        rows = await cursor.fetchall()
+    keys = ["id", "job_name", "status", "started_at", "finished_at", "affected_rows", "host_name", "error_message"]
+    return {"jobs": schedules, "runs": [dict(zip(keys, row)) for row in rows]}

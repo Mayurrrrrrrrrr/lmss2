@@ -107,6 +107,7 @@ class AppSidebar extends StatelessWidget {
             _buildSectionHeader('System'),
             _buildListTile(context, Icons.error_outline, 'Error Logs', '/admin/logs', currentRoute),
             _buildListTile(context, Icons.monitor_heart, 'Diagnostics', '/admin/diagnostics', currentRoute),
+            _buildListTile(context, Icons.schedule, 'Scheduled Jobs', '/admin/scheduled-jobs', currentRoute),
             _buildListTile(context, Icons.delete_outline, 'Recycle Bin', '/admin/recycle', currentRoute),
             _buildListTile(context, Icons.visibility, 'Impersonate User', '/admin/impersonate', currentRoute),
           ],
