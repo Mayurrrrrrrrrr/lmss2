@@ -18,8 +18,10 @@ __pycache__/
 
 # Flutter/Dart
 lmss2/.dart_tool/
+lmss2/.dart_tool_old/
 lmss2/.packages
 lmss2/build/
+lmss2/build_old/
 lmss2/web.tar.gz
 lmss2/update_interceptors.py
 remote_security.py

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,8 +14,40 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _api = ApiService();
   String? _usernameError;
   String? _passwordError;
+  Uri? _apkDownloadUri;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppDownload();
+  }
+
+  Future<void> _loadAppDownload() async {
+    try {
+      final config = await _api.getAppConfig();
+      final value = config['apk_download_url']?.toString().trim();
+      final uri = value == null || value.isEmpty ? null : Uri.tryParse(value);
+      if (mounted && uri != null && uri.hasScheme) {
+        setState(() => _apkDownloadUri = uri);
+      }
+    } catch (_) {
+      // Login remains available if optional application configuration is offline.
+    }
+  }
+
+  Future<void> _downloadAndroidApp() async {
+    final uri = _apkDownloadUri;
+    if (uri == null) return;
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('The Android download could not be opened.')),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -133,6 +167,20 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                           ),
                         ),
+                        if (_apkDownloadUri != null) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: _downloadAndroidApp,
+                            icon: const Icon(Icons.android),
+                            label: const Text('Download Android app'),
+                          ),
+                          Text(
+                            'Version 1.0.1',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                       ],
                     ),
                   ),
