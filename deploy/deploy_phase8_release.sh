@@ -15,6 +15,7 @@ LMS_KEYSTORE_PATH="${3:?release keystore path is required}"
 SIGNING_ENV="${4:?signing environment file is required}"
 PREBUILT_APK="${5:-}"
 PREBUILT_AAB="${6:-}"
+RESUME_AFTER_BUILD="${LMS_RESUME_AFTER_BUILD:-0}"
 LMS_KEYSTORE_PASSWORD=""
 LMS_KEY_ALIAS=""
 LMS_KEY_PASSWORD=""
@@ -80,38 +81,54 @@ fi
 command -v libreoffice >/dev/null || fail "LibreOffice is required for PPT/DOC conversion"
 command -v rsync >/dev/null || fail "rsync is required"
 
-echo "[1/10] Extracting isolated release"
-rm -rf -- "$APP_ROOT"
-mkdir -p "$APP_ROOT" "$BACKUP"
-tar -xzf "$ARCHIVE" -C "$APP_ROOT"
-chown -R ubuntu:ubuntu "$APP_ROOT"
-[[ -f "$SOURCE_ROOT/lmss2/pubspec.yaml" ]] || fail "unexpected archive layout"
-[[ -f "$SOURCE_ROOT/lms_v2_backend/app/main.py" ]] || fail "backend source is missing"
-
-echo "[2/10] Validating backend"
-python3 -m compileall -q "$SOURCE_ROOT/lms_v2_backend/app"
-
-echo "[3/10] Resolving Flutter dependencies"
-cd "$SOURCE_ROOT/lmss2"
-flutter_as_ubuntu pub get
-
-echo "[4/10] Running strict Flutter analysis"
-flutter_as_ubuntu analyze
-
-echo "[5/10] Building web and signed Android artifacts"
-flutter_as_ubuntu build web --release --no-wasm-dry-run
-if [[ -n "$PREBUILT_APK" ]]; then
+if [[ "$RESUME_AFTER_BUILD" == "1" ]]; then
+  echo "[1/10-5/10] Resuming from verified build artifacts"
+  [[ -f "$SOURCE_ROOT/lmss2/pubspec.yaml" ]] ||
+    fail "extracted release source is missing"
+  [[ -f "$SOURCE_ROOT/lms_v2_backend/app/main.py" ]] ||
+    fail "extracted backend source is missing"
   mkdir -p \
-    build/app/outputs/flutter-apk \
-    build/app/outputs/bundle/release
+    "$SOURCE_ROOT/lmss2/build/app/outputs/flutter-apk" \
+    "$SOURCE_ROOT/lmss2/build/app/outputs/bundle/release"
   install -m 644 "$PREBUILT_APK" \
-    build/app/outputs/flutter-apk/app-release.apk
+    "$SOURCE_ROOT/lmss2/build/app/outputs/flutter-apk/app-release.apk"
   install -m 644 "$PREBUILT_AAB" \
-    build/app/outputs/bundle/release/app-release.aab
+    "$SOURCE_ROOT/lmss2/build/app/outputs/bundle/release/app-release.aab"
 else
-  flutter_as_ubuntu build apk --release
-  flutter_as_ubuntu build appbundle --release
+  echo "[1/10] Extracting isolated release"
+  rm -rf -- "$APP_ROOT"
+  mkdir -p "$APP_ROOT" "$BACKUP"
+  tar -xzf "$ARCHIVE" -C "$APP_ROOT"
+  chown -R ubuntu:ubuntu "$APP_ROOT"
+  [[ -f "$SOURCE_ROOT/lmss2/pubspec.yaml" ]] || fail "unexpected archive layout"
+  [[ -f "$SOURCE_ROOT/lms_v2_backend/app/main.py" ]] || fail "backend source is missing"
+
+  echo "[2/10] Validating backend"
+  python3 -m compileall -q "$SOURCE_ROOT/lms_v2_backend/app"
+
+  echo "[3/10] Resolving Flutter dependencies"
+  cd "$SOURCE_ROOT/lmss2"
+  flutter_as_ubuntu pub get
+
+  echo "[4/10] Running strict Flutter analysis"
+  flutter_as_ubuntu analyze
+
+  echo "[5/10] Building web and signed Android artifacts"
+  flutter_as_ubuntu build web --release --no-wasm-dry-run
+  if [[ -n "$PREBUILT_APK" ]]; then
+    mkdir -p \
+      build/app/outputs/flutter-apk \
+      build/app/outputs/bundle/release
+    install -m 644 "$PREBUILT_APK" \
+      build/app/outputs/flutter-apk/app-release.apk
+    install -m 644 "$PREBUILT_AAB" \
+      build/app/outputs/bundle/release/app-release.aab
+  else
+    flutter_as_ubuntu build apk --release
+    flutter_as_ubuntu build appbundle --release
+  fi
 fi
+cd "$SOURCE_ROOT/lmss2"
 [[ -s build/web/index.html ]] || fail "web build is incomplete"
 [[ -s build/app/outputs/flutter-apk/app-release.apk ]] || fail "APK build is incomplete"
 [[ -s build/app/outputs/bundle/release/app-release.aab ]] || fail "AAB build is incomplete"
