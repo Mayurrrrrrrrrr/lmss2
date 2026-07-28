@@ -5,12 +5,16 @@ set -Eeuo pipefail
 #   sudo -E bash deploy/deploy_phase8_release.sh \
 #     /home/ubuntu/releases/lmss2-phase8-<commit>.tar.gz <commit> \
 #     /home/ubuntu/releases/firefly-lms-release-secure.jks \
-#     /home/ubuntu/releases/android-signing-secure.env
+#     /home/ubuntu/releases/android-signing-secure.env \
+#     [/home/ubuntu/releases/app-release.apk] \
+#     [/home/ubuntu/releases/app-release.aab]
 
 ARCHIVE="${1:?release archive is required}"
 RELEASE_ID="${2:?release identifier is required}"
 LMS_KEYSTORE_PATH="${3:?release keystore path is required}"
 SIGNING_ENV="${4:?signing environment file is required}"
+PREBUILT_APK="${5:-}"
+PREBUILT_AAB="${6:-}"
 LMS_KEYSTORE_PASSWORD=""
 LMS_KEY_ALIAS=""
 LMS_KEY_PASSWORD=""
@@ -63,11 +67,16 @@ flutter_as_ubuntu() {
   fail "release identifier contains unsupported characters"
 [[ -f "$ARCHIVE" ]] || fail "archive not found: $ARCHIVE"
 [[ -x "$FLUTTER" ]] || fail "Flutter SDK not found: $FLUTTER"
-load_signing_environment
-[[ -f "${LMS_KEYSTORE_PATH:-}" ]] || fail "release keystore is missing"
-[[ -n "${LMS_KEYSTORE_PASSWORD:-}" ]] || fail "LMS_KEYSTORE_PASSWORD is missing"
-[[ -n "${LMS_KEY_ALIAS:-}" ]] || fail "LMS_KEY_ALIAS is missing"
-[[ -n "${LMS_KEY_PASSWORD:-}" ]] || fail "LMS_KEY_PASSWORD is missing"
+if [[ -n "$PREBUILT_APK" || -n "$PREBUILT_AAB" ]]; then
+  [[ -s "$PREBUILT_APK" ]] || fail "prebuilt APK is missing or empty"
+  [[ -s "$PREBUILT_AAB" ]] || fail "prebuilt AAB is missing or empty"
+else
+  load_signing_environment
+  [[ -f "${LMS_KEYSTORE_PATH:-}" ]] || fail "release keystore is missing"
+  [[ -n "${LMS_KEYSTORE_PASSWORD:-}" ]] || fail "LMS_KEYSTORE_PASSWORD is missing"
+  [[ -n "${LMS_KEY_ALIAS:-}" ]] || fail "LMS_KEY_ALIAS is missing"
+  [[ -n "${LMS_KEY_PASSWORD:-}" ]] || fail "LMS_KEY_PASSWORD is missing"
+fi
 command -v libreoffice >/dev/null || fail "LibreOffice is required for PPT/DOC conversion"
 command -v rsync >/dev/null || fail "rsync is required"
 
@@ -91,8 +100,18 @@ flutter_as_ubuntu analyze
 
 echo "[5/10] Building web and signed Android artifacts"
 flutter_as_ubuntu build web --release --no-wasm-dry-run
-flutter_as_ubuntu build apk --release
-flutter_as_ubuntu build appbundle --release
+if [[ -n "$PREBUILT_APK" ]]; then
+  mkdir -p \
+    build/app/outputs/flutter-apk \
+    build/app/outputs/bundle/release
+  install -m 644 "$PREBUILT_APK" \
+    build/app/outputs/flutter-apk/app-release.apk
+  install -m 644 "$PREBUILT_AAB" \
+    build/app/outputs/bundle/release/app-release.aab
+else
+  flutter_as_ubuntu build apk --release
+  flutter_as_ubuntu build appbundle --release
+fi
 [[ -s build/web/index.html ]] || fail "web build is incomplete"
 [[ -s build/app/outputs/flutter-apk/app-release.apk ]] || fail "APK build is incomplete"
 [[ -s build/app/outputs/bundle/release/app-release.aab ]] || fail "AAB build is incomplete"
