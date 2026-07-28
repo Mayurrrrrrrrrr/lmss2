@@ -162,8 +162,8 @@ PYTHONPATH="$BACKEND_LIVE" ./venv/bin/python scripts/phase2_participant_audit.py
 PYTHONPATH="$BACKEND_LIVE" ./venv/bin/python scripts/phase3_trainer_audit.py
 
 echo "[9/10] Publishing web portal and Android download"
-mkdir -p "$WEB_NEXT/downloads"
 rsync -a --delete "$SOURCE_ROOT/lmss2/build/web/" "$WEB_NEXT/"
+mkdir -p "$WEB_NEXT/downloads"
 install -m 644 \
   "$SOURCE_ROOT/lmss2/build/app/outputs/flutter-apk/app-release.apk" \
   "$WEB_NEXT/downloads/$APK_NAME"
