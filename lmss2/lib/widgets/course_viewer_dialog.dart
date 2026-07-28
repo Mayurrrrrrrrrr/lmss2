@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'platform_content_view.dart';
+import 'course_content_view.dart';
 
 class CourseViewerDialog extends StatefulWidget {
   final int courseId;
@@ -128,12 +129,12 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
     final bool isWide = screenWidth > 800;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(24),
+      shape: const RoundedRectangleBorder(),
+      insetPadding: EdgeInsets.zero,
       child: Container(
-        width: 1050,
-        height: 680,
-        padding: const EdgeInsets.all(24),
+        width: double.infinity,
+        height: double.infinity,
+        padding: EdgeInsets.all(isWide ? 24 : 12),
         child: Column(
           children: [
             // Banner if Trainer Preview
@@ -364,8 +365,7 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
 
     // 2. VIDEO FILE (MP4 / WEBM)
     if (type.contains('video') || mediaUrl.endsWith('.mp4') || mediaUrl.contains('/stream/')) {
-      final String viewType = 'video-element-$chapterId';
-      return buildEmbeddedContent(viewType: viewType, source: mediaUrl, video: true, fallback: const Center(child: Text('Video Player (Native)', style: TextStyle(color: Colors.white))));
+      return buildCourseContentView(contentType: 'video', mediaUrl: mediaUrl, htmlContent: null, chapterId: chapterId);
     }
 
     // 3. PDF / OFFICE DOCUMENT VIEWER
@@ -376,26 +376,15 @@ class _CourseViewerDialogState extends State<CourseViewerDialog> {
         lowerUrl.endsWith('.pptx') || lowerUrl.endsWith('.doc') ||
         lowerUrl.endsWith('.docx');
     if (isDocument) {
-      final String encodedTarget = Uri.encodeComponent(mediaUrl);
-      final String documentUrl = 'https://docs.google.com/gview?url=$encodedTarget&embedded=true';
-      final String viewType = 'document-iframe-$chapterId';
-
-      return buildEmbeddedContent(viewType: viewType, source: documentUrl, fallback: const Center(child: Text('Document preview is available in the web portal.', style: TextStyle(color: Colors.white))));
+      return buildCourseContentView(contentType: type, mediaUrl: mediaUrl, htmlContent: null, chapterId: chapterId);
     }
 
     // 4. HTML / TEXT CONTENT
-    final String viewType = 'html-content-$chapterId';
     final String contentToDisplay = htmlContent.isNotEmpty
         ? htmlContent
         : (mediaUrl.isNotEmpty ? mediaUrl : '<h3>Chapter Reading Material</h3><p>Complete all assigned readings and exercises.</p>');
 
-    return buildEmbeddedContent(viewType: viewType, htmlContent: contentToDisplay, fallback: Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Text(contentToDisplay, style: const TextStyle(fontSize: 16)),
-      ),
-    ));
+    return buildCourseContentView(contentType: 'html', mediaUrl: null, htmlContent: contentToDisplay, chapterId: chapterId);
   }
 
   String _extractYouTubeId(String url) {

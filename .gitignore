@@ -3,6 +3,8 @@
 # Secrets and Keys
 *.key
 *.key.pub
+*.jks
+release-secrets/
 *.zip
 *.sql
 wallet/
