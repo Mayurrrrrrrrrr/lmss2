@@ -162,8 +162,9 @@ class _State extends State<TrainerGamificationScreen>
             onPressed: () async {
               final xp = int.tryParse(cost.text),
                   qty = int.tryParse(stock.text);
-              if (title.text.trim().isEmpty || xp == null || qty == null)
+              if (title.text.trim().isEmpty || xp == null || qty == null) {
                 return;
+              }
               await api.createReward({
                 'title': title.text.trim(),
                 'description': desc.text.trim(),

@@ -75,10 +75,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         ),
       );
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('AI answer unavailable: $error')),
         );
+      }
     }
   }
 
@@ -114,10 +115,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         ),
       );
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Takeaways unavailable: $error')),
         );
+      }
     }
   }
 

@@ -50,12 +50,13 @@ class _ParticipantRoleplaysScreenState extends State<ParticipantRoleplaysScreen>
                   onPressed: uploading
                       ? null
                       : () async {
-                          final result = await FilePicker.platform.pickFiles(
+                          final result = await FilePicker.pickFiles(
                             type: FileType.video,
                             withData: true,
                           );
-                          if (result != null)
+                          if (result != null) {
                             update(() => selected = result.files.single);
+                          }
                         },
                   icon: const Icon(Icons.video_file_outlined),
                   label: Text(
@@ -100,11 +101,13 @@ class _ParticipantRoleplaysScreenState extends State<ParticipantRoleplaysScreen>
                           selected!.bytes!,
                           selected!.name,
                         );
-                        if (dialogContext.mounted)
+                        if (dialogContext.mounted) {
                           Navigator.pop(dialogContext, true);
+                        }
                       } finally {
-                        if (dialogContext.mounted)
+                        if (dialogContext.mounted) {
                           update(() => uploading = false);
+                        }
                       }
                     },
               icon: const Icon(Icons.cloud_upload_outlined),
@@ -173,13 +176,15 @@ class _ParticipantRoleplaysScreenState extends State<ParticipantRoleplaysScreen>
           child: FutureBuilder<Map<String, dynamic>>(
             future: _data,
             builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done)
+              if (snapshot.connectionState != ConnectionState.done) {
                 return const LmsLoadingState(label: 'Loading roleplays');
-              if (snapshot.hasError)
+              }
+              if (snapshot.hasError) {
                 return LmsErrorState(
                   message: 'We could not load your roleplays.',
                   onRetry: _reload,
                 );
+              }
               final data = snapshot.data ?? {};
               List<Map<String, dynamic>> rows(String key) =>
                   List<Map<String, dynamic>>.from(data[key] ?? const []);

@@ -47,11 +47,12 @@ class _TrainerRoleplaysScreenState extends State<TrainerRoleplaysScreen> {
         _loading = false;
       });
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = '$e';
           _loading = false;
         });
+      }
     }
   }
 
@@ -196,12 +197,14 @@ class _TrainerRoleplaysScreenState extends State<TrainerRoleplaysScreen> {
               onPressed: () async {
                 if (week.text.trim().isEmpty ||
                     day.text.trim().isEmpty ||
-                    topic.text.trim().isEmpty)
+                    topic.text.trim().isEmpty) {
                   return;
+                }
                 if ((mode == 'individual' && users.isEmpty) ||
                     (mode == 'store' && stores.isEmpty) ||
-                    (mode == 'manager' && managers.isEmpty))
+                    (mode == 'manager' && managers.isEmpty)) {
                   return;
+                }
                 await _api.assignTrainerRoleplays(
                   weekNo: week.text.trim(),
                   day: day.text.trim(),
@@ -324,11 +327,12 @@ class _TrainerRoleplaysScreenState extends State<TrainerRoleplaysScreen> {
                   isThreeLine: true,
                   trailing: PopupMenuButton<String>(
                     onSelected: (action) async {
-                      if (action == 'watch' && item['video_url'] != null)
+                      if (action == 'watch' && item['video_url'] != null) {
                         await launchUrl(
                           Uri.parse(item['video_url'].toString()),
                           mode: LaunchMode.externalApplication,
                         );
+                      }
                       if (action == 'evaluate') await _evaluate(item);
                       if (action == 'delete') {
                         await _api.deleteTrainerRoleplay(item['id'] as int);
