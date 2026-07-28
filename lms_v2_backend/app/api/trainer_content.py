@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import asyncio
+import shutil
+import subprocess
 from typing import Literal
 from uuid import uuid4
 
@@ -63,9 +66,29 @@ async def upload_course_content(file: UploadFile = File(...), current_user: User
         raise HTTPException(413, "Training-content files are limited to 50 MB")
     UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
     stored_name = f"{uuid4().hex}{extension}"
-    (UPLOAD_ROOT / stored_name).write_bytes(content)
+    stored_path = UPLOAD_ROOT / stored_name
+    stored_path.write_bytes(content)
+    content_path = f"course-content/{stored_name}"
+    if extension in {".ppt", ".pptx", ".doc", ".docx"}:
+        converter = shutil.which("libreoffice") or shutil.which("soffice")
+        if not converter:
+            stored_path.unlink(missing_ok=True)
+            raise HTTPException(503, "Office preview conversion is not installed on this server")
+        result = await asyncio.to_thread(
+            subprocess.run,
+            [converter, "--headless", "--convert-to", "pdf", "--outdir", str(UPLOAD_ROOT), str(stored_path)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        preview_path = stored_path.with_suffix(".pdf")
+        if result.returncode != 0 or not preview_path.exists():
+            stored_path.unlink(missing_ok=True)
+            raise HTTPException(422, "This Office document could not be converted to a preview")
+        content_path = f"course-content/{preview_path.name}"
     return {
-        "content_path": f"course-content/{stored_name}",
+        "content_path": content_path,
+        "original_path": f"course-content/{stored_name}",
         "original_name": original_name,
         "size": len(content),
     }

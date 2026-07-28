@@ -1,14 +1,24 @@
 from typing import Literal
+from pathlib import Path
+from uuid import uuid4
+import hashlib
+import hmac
+import time
+from urllib.parse import quote
 
 import oracledb
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel, Field
 
 from app.core.database import get_db_connection
 from app.core.security import get_current_user, require_trainer
 from app.schemas.user import UserProfile
+from app.core.config import settings
 
 router = APIRouter()
+ROLEPLAY_UPLOAD_ROOT = Path("/var/www/lms_portal/uploads/roleplays")
+ROLEPLAY_MAX_BYTES = 100 * 1024 * 1024
+ROLEPLAY_EXTENSIONS = {".mp4", ".webm", ".mov"}
 
 
 class RoleplayAssignmentInput(BaseModel):
@@ -41,6 +51,17 @@ def _roleplay_dict(row):
     return dict(zip(keys, row))
 
 
+def _signed_video_url(request: Request, value: str | None) -> str | None:
+    if not value:
+        return None
+    if value.startswith(("http://", "https://")):
+        return value
+    clean = value.lstrip("/")
+    expires = int(time.time()) + 900
+    signature = hmac.new(settings.SECRET_KEY.encode(), f"{clean}:{expires}".encode(), hashlib.sha256).hexdigest()
+    return f"{str(request.base_url).rstrip('/')}/api/v2/media/stream/{quote(clean)}?expires={expires}&signature={signature}"
+
+
 async def _learner(current_user: UserProfile = Depends(get_current_user)):
     if current_user.role not in ("participant", "area_manager", "admin"):
         raise HTTPException(403, "Requires learner privileges")
@@ -49,6 +70,7 @@ async def _learner(current_user: UserProfile = Depends(get_current_user)):
 
 @router.get("/trainer/roleplays")
 async def trainer_roleplays(
+    request: Request,
     status: str | None = None,
     store_code: str | None = None,
     topic: str | None = None,
@@ -75,7 +97,10 @@ async def trainer_roleplays(
           FROM roleplay_sessions r JOIN users u ON u.id=r.user_id
           LEFT JOIN user_profiles up ON up.user_id=u.id
         """ + where + " ORDER BY r.created_at DESC,r.id DESC OFFSET :offset ROWS FETCH NEXT :limit ROWS ONLY", params)
-        return {"sessions": [_roleplay_dict(row) for row in await cursor.fetchall()], "total": total, "page": page, "limit": limit}
+        sessions = [_roleplay_dict(row) for row in await cursor.fetchall()]
+        for session in sessions:
+            session["video_url"] = _signed_video_url(request, session.get("video_url"))
+        return {"sessions": sessions, "total": total, "page": page, "limit": limit}
 
 
 @router.get("/trainer/roleplay-options")
@@ -159,7 +184,7 @@ async def delete_roleplay(session_id: int, current_user: UserProfile = Depends(r
 
 
 @router.get("/roleplays/list")
-async def participant_roleplays(current_user: UserProfile = Depends(_learner), conn=Depends(get_db_connection)):
+async def participant_roleplays(request: Request, current_user: UserProfile = Depends(_learner), conn=Depends(get_db_connection)):
     async with conn.cursor() as cursor:
         await cursor.execute("""SELECT r.id,r.user_id,u.username,NVL(up.full_name,NVL(u.full_name,u.username)),r.store_code,
                                       r.week_no,r.day,r.scenario_topic,r.jdc_name,r.status,r.video_path,r.observer_score,
@@ -169,6 +194,7 @@ async def participant_roleplays(current_user: UserProfile = Depends(_learner), c
         grouped = {"assigned": [], "pending": [], "completed": []}
         for row in await cursor.fetchall():
             item = _roleplay_dict(row)
+            item["video_url"] = _signed_video_url(request, item.get("video_url"))
             key = str(item["status"] or "assigned").lower()
             grouped.setdefault(key, []).append(item)
         return grouped
@@ -185,3 +211,38 @@ async def submit_roleplay(session_id: int, body: RoleplaySubmissionInput, curren
                              video_url=body.video_url, remarks=body.participant_remarks, session_id=session_id, user_id=current_user.id)
         if cursor.rowcount == 0: raise HTTPException(404, "Assigned roleplay session not found")
         await conn.commit(); return {"message": "Roleplay submitted", "video_url": body.video_url}
+
+
+@router.post("/roleplays/{session_id}/upload", status_code=201)
+async def upload_roleplay(session_id: int, file: UploadFile = File(...), current_user: UserProfile = Depends(_learner), conn=Depends(get_db_connection)):
+    original_name = Path(file.filename or "roleplay").name
+    extension = Path(original_name).suffix.lower()
+    if extension not in ROLEPLAY_EXTENSIONS:
+        raise HTTPException(415, "Upload an MP4, WebM, or MOV video")
+    content = await file.read(ROLEPLAY_MAX_BYTES + 1)
+    await file.close()
+    if not content:
+        raise HTTPException(422, "Uploaded video is empty")
+    if len(content) > ROLEPLAY_MAX_BYTES:
+        raise HTTPException(413, "Roleplay videos are limited to 100 MB")
+    if extension == ".mp4" and b"ftyp" not in content[:64]:
+        raise HTTPException(415, "The uploaded file is not a valid MP4 video")
+    async with conn.cursor() as cursor:
+        await cursor.execute("""SELECT id FROM roleplay_sessions WHERE id=:session_id AND user_id=:user_id
+                                AND LOWER(status)='assigned'""", session_id=session_id, user_id=current_user.id)
+        if not await cursor.fetchone():
+            raise HTTPException(404, "Assigned roleplay session not found")
+        ROLEPLAY_UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+        stored_name = f"{uuid4().hex}{extension}"
+        destination = ROLEPLAY_UPLOAD_ROOT / stored_name
+        destination.write_bytes(content)
+        relative_path = f"roleplays/{stored_name}"
+        try:
+            await cursor.execute("""UPDATE roleplay_sessions SET video_path=:video_path,status='Pending',
+                                    updated_at=SYSTIMESTAMP WHERE id=:session_id AND user_id=:user_id""",
+                                 video_path=relative_path, session_id=session_id, user_id=current_user.id)
+            await conn.commit()
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
+    return {"message": "Roleplay uploaded", "video_path": relative_path, "original_name": original_name, "size": len(content)}

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.lms_frontend"
+    namespace = "com.yuktaa.firefly.lms"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,20 +21,35 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.lms_frontend"
+        applicationId = "com.yuktaa.firefly.lms"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            val storePath = System.getenv("LMS_KEYSTORE_PATH")
+            val storePasswordValue = System.getenv("LMS_KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("LMS_KEY_ALIAS")
+            val keyPasswordValue = System.getenv("LMS_KEY_PASSWORD")
+            if (storePath != null && storePasswordValue != null && keyAliasValue != null && keyPasswordValue != null) {
+                storeFile = file(storePath)
+                storePassword = storePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }

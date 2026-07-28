@@ -28,6 +28,10 @@ Widget buildEmbeddedContent({
         ..style.width = '100%'
         ..style.height = '100%';
       if (htmlContent != null) {
+        frame.setAttribute(
+          'sandbox',
+          'allow-forms allow-popups allow-popups-to-escape-sandbox',
+        );
         frame.srcdoc = htmlContent.toJS;
       } else {
         frame.src = source ?? '';

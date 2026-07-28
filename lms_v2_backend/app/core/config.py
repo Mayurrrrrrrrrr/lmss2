@@ -36,7 +36,8 @@ class Settings(BaseSettings):
     
     # Token Settings
     SECRET_KEY: str = "change_this_in_production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30 * 12 * 5 # 5 years approx to match V1 logic
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 12
+    ALLOWED_ORIGINS: str = "https://lms2.yuktaa.com"
 
     model_config = SettingsConfigDict(env_file=".env", env_ignore_empty=True, extra="ignore")
 

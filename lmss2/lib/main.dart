@@ -57,6 +57,7 @@ import 'screens/participant_ai_tools_screen.dart';
 import 'screens/app_config_screen.dart';
 import 'screens/participant_content_screen.dart';
 import 'screens/scheduled_jobs_screen.dart';
+import 'screens/operations_hub_screen.dart';
 import 'theme/lms_theme.dart';
 
 void main() {
@@ -121,7 +122,9 @@ class _MyAppState extends State<MyApp> {
           return '/dashboard';
         }
 
-        if (path.startsWith('/trainer/') && role != 'trainer' && role != 'admin') {
+        if (path.startsWith('/trainer/') &&
+            role != 'trainer' &&
+            role != 'admin') {
           return '/dashboard';
         }
 
@@ -148,10 +151,7 @@ class _MyAppState extends State<MyApp> {
             return PublicStaticPageScreen(slug: slug);
           },
         ),
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const LoginScreen(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const LoginScreen()),
         GoRoute(
           path: '/dashboard',
           builder: (context, state) {
@@ -235,13 +235,37 @@ class _MyAppState extends State<MyApp> {
           path: '/trainer/notifications',
           builder: (context, state) => const TrainerNotificationsScreen(),
         ),
-        GoRoute(path:'/trainer/booster',builder:(context,state)=>const TrainerBoosterScreen()),
-        GoRoute(path:'/trainer/milestones',builder:(context,state)=>const TrainerMilestonesScreen()),
-        GoRoute(path:'/trainer/integrations',builder:(context,state)=>const IntegrationsScreen()),
-        GoRoute(path:'/trainer/app-versions',builder:(context,state)=>const AppVersionsScreen()),
-        GoRoute(path:'/trainer/live',builder:(context,state)=>const TrainerLiveScreen()),
-        GoRoute(path:'/trainer/live/:sessionId',builder:(context,state)=>LiveHostScreen(sessionId:int.parse(state.pathParameters['sessionId']!),report:state.uri.queryParameters['report']=='1')),
-        GoRoute(path:'/trainer/ai-tools',builder:(context,state)=>const TrainerAiToolsScreen()),
+        GoRoute(
+          path: '/trainer/booster',
+          builder: (context, state) => const TrainerBoosterScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/milestones',
+          builder: (context, state) => const TrainerMilestonesScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/integrations',
+          builder: (context, state) => const IntegrationsScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/app-versions',
+          builder: (context, state) => const AppVersionsScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/live',
+          builder: (context, state) => const TrainerLiveScreen(),
+        ),
+        GoRoute(
+          path: '/trainer/live/:sessionId',
+          builder: (context, state) => LiveHostScreen(
+            sessionId: int.parse(state.pathParameters['sessionId']!),
+            report: state.uri.queryParameters['report'] == '1',
+          ),
+        ),
+        GoRoute(
+          path: '/trainer/ai-tools',
+          builder: (context, state) => const TrainerAiToolsScreen(),
+        ),
         GoRoute(
           path: '/admin/logs',
           builder: (context, state) => const ErrorLogsScreen(),
@@ -281,21 +305,49 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const ParticipantGamificationScreen(),
         ),
         GoRoute(
+          path: '/participant/leaderboard',
+          builder: (context, state) =>
+              const ParticipantGamificationScreen(initialTab: 2),
+        ),
+        GoRoute(
+          path: '/operations',
+          builder: (context, state) => const OperationsHubScreen(),
+        ),
+        GoRoute(
           path: '/participant/notifications',
           builder: (context, state) => const NotificationsScreen(),
         ),
-        GoRoute(path:'/participant/booster',builder:(context,state)=>const BrainBoosterScreen()),
-        GoRoute(path:'/participant/live',builder:(context,state)=>const ParticipantLiveJoinScreen()),
-        GoRoute(path:'/participant/live/:sessionId',builder:(context,state)=>ParticipantLiveScreen(sessionId:int.parse(state.pathParameters['sessionId']!))),
-        GoRoute(path:'/participant/ai-tools',builder:(context,state)=>const ParticipantAiToolsScreen()),
-        GoRoute(path:'/participant/content',builder:(context,state)=>const ParticipantContentScreen()),
+        GoRoute(
+          path: '/participant/booster',
+          builder: (context, state) => const BrainBoosterScreen(),
+        ),
+        GoRoute(
+          path: '/participant/live',
+          builder: (context, state) => const ParticipantLiveJoinScreen(),
+        ),
+        GoRoute(
+          path: '/participant/live/:sessionId',
+          builder: (context, state) => ParticipantLiveScreen(
+            sessionId: int.parse(state.pathParameters['sessionId']!),
+          ),
+        ),
+        GoRoute(
+          path: '/participant/ai-tools',
+          builder: (context, state) => const ParticipantAiToolsScreen(),
+        ),
+        GoRoute(
+          path: '/participant/content',
+          builder: (context, state) => const ParticipantContentScreen(),
+        ),
         GoRoute(
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),
         ),
         GoRoute(
           path: '/participant/certificates/:courseId',
-          builder: (context, state) => CertificateScreen(courseId: int.parse(state.pathParameters['courseId']!)),
+          builder: (context, state) => CertificateScreen(
+            courseId: int.parse(state.pathParameters['courseId']!),
+          ),
         ),
         GoRoute(
           path: '/profile',
@@ -325,8 +377,14 @@ class _MyAppState extends State<MyApp> {
           path: '/admin/diagnostics',
           builder: (context, state) => const DiagnosticsScreen(),
         ),
-        GoRoute(path:'/admin/app-config',builder:(context,state)=>const AppConfigScreen()),
-        GoRoute(path:'/admin/scheduled-jobs',builder:(context,state)=>const ScheduledJobsScreen()),
+        GoRoute(
+          path: '/admin/app-config',
+          builder: (context, state) => const AppConfigScreen(),
+        ),
+        GoRoute(
+          path: '/admin/scheduled-jobs',
+          builder: (context, state) => const ScheduledJobsScreen(),
+        ),
       ],
     );
   }

@@ -18,15 +18,16 @@ class CourseSummary {
   });
 
   factory CourseSummary.fromJson(Map<String, dynamic> json) => CourseSummary(
-        id: (json['id'] as num).toInt(),
-        title: json['title'] as String? ?? '',
-        description: json['description'] as String? ?? '',
-        thumbnailUrl: json['thumbnail_url'] as String?,
-        totalChapters: (json['total_chapters'] as num?)?.toInt() ?? 0,
-        completedChapters: (json['completed_chapters'] as num?)?.toInt() ?? 0,
-        progressPercent: (json['progress_percent'] as num?)?.toInt() ?? 0,
-      );
+    id: (json['id'] as num).toInt(),
+    title: json['title'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    thumbnailUrl: json['thumbnail_url'] as String?,
+    totalChapters: (json['total_chapters'] as num?)?.toInt() ?? 0,
+    completedChapters: (json['completed_chapters'] as num?)?.toInt() ?? 0,
+    progressPercent: (json['progress_percent'] as num?)?.toInt() ?? 0,
+  );
 }
+
 class CourseDetail {
   final int id;
   final String title;
@@ -70,16 +71,21 @@ class CourseModule {
   final int sequenceOrder;
   final List<CourseChapter> chapters;
 
-  const CourseModule({required this.id, required this.title, required this.sequenceOrder, required this.chapters});
+  const CourseModule({
+    required this.id,
+    required this.title,
+    required this.sequenceOrder,
+    required this.chapters,
+  });
 
   factory CourseModule.fromJson(Map<String, dynamic> json) => CourseModule(
-        id: (json['id'] as num).toInt(),
-        title: json['title'] as String? ?? '',
-        sequenceOrder: (json['sequence_order'] as num?)?.toInt() ?? 0,
-        chapters: (json['chapters'] as List<dynamic>? ?? const [])
-            .map((item) => CourseChapter.fromJson(item as Map<String, dynamic>))
-            .toList(),
-      );
+    id: (json['id'] as num).toInt(),
+    title: json['title'] as String? ?? '',
+    sequenceOrder: (json['sequence_order'] as num?)?.toInt() ?? 0,
+    chapters: (json['chapters'] as List<dynamic>? ?? const [])
+        .map((item) => CourseChapter.fromJson(item as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class CourseChapter {
@@ -87,6 +93,7 @@ class CourseChapter {
   final String title;
   final String contentType;
   final String? mediaUrl;
+  final String? htmlContent;
   final bool isCompleted;
   final int progressPercent;
 
@@ -95,18 +102,20 @@ class CourseChapter {
     required this.title,
     required this.contentType,
     required this.mediaUrl,
+    required this.htmlContent,
     required this.isCompleted,
     required this.progressPercent,
   });
 
   factory CourseChapter.fromJson(Map<String, dynamic> json) => CourseChapter(
-        id: (json['id'] as num).toInt(),
-        title: json['title'] as String? ?? '',
-        contentType: json['content_type'] as String? ?? '',
-        mediaUrl: json['media_url'] as String?,
-        isCompleted: json['is_completed'] as bool? ?? false,
-        progressPercent: (json['progress_percent'] as num?)?.toInt() ?? 0,
-      );
+    id: (json['id'] as num).toInt(),
+    title: json['title'] as String? ?? '',
+    contentType: json['content_type'] as String? ?? '',
+    mediaUrl: json['media_url'] as String?,
+    htmlContent: json['html_content'] as String?,
+    isCompleted: json['is_completed'] as bool? ?? false,
+    progressPercent: (json['progress_percent'] as num?)?.toInt() ?? 0,
+  );
 }
 
 class LinkedQuiz {
@@ -114,11 +123,15 @@ class LinkedQuiz {
   final String title;
   final int attemptCount;
 
-  const LinkedQuiz({required this.id, required this.title, required this.attemptCount});
+  const LinkedQuiz({
+    required this.id,
+    required this.title,
+    required this.attemptCount,
+  });
 
   factory LinkedQuiz.fromJson(Map<String, dynamic> json) => LinkedQuiz(
-        id: (json['id'] as num).toInt(),
-        title: json['title'] as String? ?? '',
-        attemptCount: (json['attempt_count'] as num?)?.toInt() ?? 0,
-      );
+    id: (json['id'] as num).toInt(),
+    title: json['title'] as String? ?? '',
+    attemptCount: (json['attempt_count'] as num?)?.toInt() ?? 0,
+  );
 }

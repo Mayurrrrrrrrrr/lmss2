@@ -12,10 +12,10 @@ from app.core.security import create_access_token
 
 BASE = "http://127.0.0.1:8000/api/v2"
 ROLE_ENDPOINTS = {
-    "admin": ["/admin/dashboard", "/admin/users", "/admin/pages", "/reports/options"],
-    "trainer": ["/trainer/dashboard", "/trainer/courses", "/trainer/quizzes", "/live/trainer/options", "/ai/trainer/options", "/reports/options"],
-    "participant": ["/participant/dashboard", "/courses/list", "/quizzes/list", "/tasks/list", "/roleplays/list", "/participant/pages"],
-    "area_manager": ["/manager/dashboard", "/reports/options", "/participant/search?q=course"],
+    "admin": ["/admin/dashboard", "/admin/users", "/admin/pages", "/reports/options", "/operations/dashboard", "/operations/capabilities"],
+    "trainer": ["/trainer/dashboard", "/trainer/courses", "/trainer/quizzes", "/live/trainer/options", "/ai/trainer/options", "/reports/options", "/operations/dashboard", "/operations/capabilities"],
+    "participant": ["/participant/dashboard", "/courses/list", "/quizzes/list", "/tasks/list", "/roleplays/list", "/participant/pages", "/leaderboard", "/operations/dashboard", "/operations/capabilities"],
+    "area_manager": ["/manager/dashboard", "/reports/options", "/participant/search?q=course", "/operations/dashboard", "/operations/capabilities"],
 }
 DENIED_ENDPOINTS = {
     "participant": ["/admin/dashboard", "/trainer/dashboard", "/live/trainer/options"],

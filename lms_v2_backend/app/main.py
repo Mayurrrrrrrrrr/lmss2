@@ -1,6 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from time import monotonic
+from uuid import uuid4
 from app.core.database import init_db_pool, close_db_pool
 from app.core.config import settings
 from app.api.auth import router as auth_router
@@ -27,6 +30,7 @@ from app.api.leaderboard import router as leaderboard_router
 from app.api.fcm import router as fcm_router
 from app.api.media import router as media_router
 from app.api.participant import router as participant_router
+from app.api.retail_operations import router as retail_operations_router
 from app.core.websocket_manager import manager
 import app.core.database as db
 
@@ -63,11 +67,50 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[value.strip() for value in settings.ALLOWED_ORIGINS.split(",") if value.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_request_windows: dict[str, deque[float]] = defaultdict(deque)
+
+
+@app.middleware("http")
+async def security_and_observability(request: Request, call_next):
+    request_id = request.headers.get("x-request-id") or uuid4().hex
+    started = monotonic()
+    path = request.url.path
+    client = request.client.host if request.client else "unknown"
+    if path.endswith("/auth/login"):
+        limit, window = 20, 300
+    elif "/api/v2/ai/" in path:
+        limit, window = 60, 60
+    else:
+        limit = window = 0
+    if limit:
+        key = f"{client}:{path}"
+        events = _request_windows[key]
+        now = monotonic()
+        while events and events[0] <= now - window:
+            events.popleft()
+        if len(events) >= limit:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please try again shortly."},
+                headers={"Retry-After": str(window), "X-Request-ID": request_id},
+            )
+        events.append(now)
+    response = await call_next(request)
+    elapsed_ms = int((monotonic() - started) * 1000)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["Server-Timing"] = f"app;dur={elapsed_ms}"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "same-origin"
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=()"
+    if path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 # Automated Real-Time Error Logger Middleware
 @app.exception_handler(Exception)
@@ -122,6 +165,7 @@ app.include_router(quizzes_read_router, prefix="/api/v2", tags=["Quizzes (Mobile
 app.include_router(leaderboard_router, prefix="/api/v2", tags=["Leaderboard"])
 app.include_router(fcm_router, prefix="/api/v2", tags=["FCM Notifications"])
 app.include_router(media_router, prefix="/api/v2", tags=["Media"])
+app.include_router(retail_operations_router, prefix="/api/v2", tags=["Retail Operations"])
 
 @app.get("/api/health")
 async def health_check():

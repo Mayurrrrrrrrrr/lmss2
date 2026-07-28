@@ -18,7 +18,8 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String? get role => _role;
   String? get token => _token;
-  String get displayName => _displayName?.trim().isNotEmpty == true ? _displayName! : 'LMS User';
+  String get displayName =>
+      _displayName?.trim().isNotEmpty == true ? _displayName! : 'LMS User';
   bool get isImpersonating => _isImpersonating;
   bool get isInitialized => _isInitialized;
 
@@ -30,6 +31,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString('jwt_token');
+      _apiService.setAuthToken(_token);
       _role = prefs.getString('user_role');
       _displayName = prefs.getString('display_name');
       _isImpersonating = prefs.getBool('is_impersonating') ?? false;
@@ -43,21 +45,31 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String username, String password, {String appVersion = '1.0.0'}) async {
+  Future<bool> login(
+    String username,
+    String password, {
+    String appVersion = '1.0.0',
+  }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       final response = await _apiService.login(username, password, appVersion);
-      
+
       _token = response.token;
-      _role = response.userProfile['role'] as String?; // Assuming role is returned in userProfile
-      _displayName = (response.userProfile['full_name'] ?? response.userProfile['username'])?.toString();
+      _role =
+          response.userProfile['role']
+              as String?; // Assuming role is returned in userProfile
+      _displayName =
+          (response.userProfile['full_name'] ??
+                  response.userProfile['username'])
+              ?.toString();
       _isAuthenticated = true;
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('jwt_token', _token!);
+      _apiService.setAuthToken(_token);
       if (_role != null) {
         await prefs.setString('user_role', _role!);
       }
@@ -86,8 +98,9 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove('admin_jwt_token');
     await prefs.remove('admin_user_role');
     await prefs.remove('admin_display_name');
-    
+
     _token = null;
+    _apiService.setAuthToken(null);
     _role = null;
     _displayName = null;
     _isAuthenticated = false;
@@ -105,9 +118,12 @@ class AuthProvider extends ChangeNotifier {
     }
     _token = response.token;
     _role = response.userProfile['role']?.toString().toLowerCase();
-    _displayName = (response.userProfile['full_name'] ?? response.userProfile['username'])?.toString();
+    _displayName =
+        (response.userProfile['full_name'] ?? response.userProfile['username'])
+            ?.toString();
     _isImpersonating = true;
     await prefs.setString('jwt_token', _token!);
+    _apiService.setAuthToken(_token);
     await prefs.setString('user_role', _role!);
     await prefs.setString('display_name', _displayName ?? 'LMS User');
     await prefs.setBool('is_impersonating', true);
@@ -127,6 +143,7 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = true;
     _isImpersonating = false;
     await prefs.setString('jwt_token', _token!);
+    _apiService.setAuthToken(_token);
     await prefs.setString('user_role', _role!);
     await prefs.setString('display_name', _displayName!);
     await prefs.remove('is_impersonating');
