@@ -29,6 +29,18 @@ fail() {
   exit 1
 }
 
+flutter_as_ubuntu() {
+  runuser -u ubuntu -- env \
+    HOME=/home/ubuntu \
+    PUB_CACHE=/home/ubuntu/.pub-cache \
+    LMS_KEYSTORE_PATH="$LMS_KEYSTORE_PATH" \
+    LMS_KEYSTORE_PASSWORD="$LMS_KEYSTORE_PASSWORD" \
+    LMS_KEY_ALIAS="$LMS_KEY_ALIAS" \
+    LMS_KEY_PASSWORD="$LMS_KEY_PASSWORD" \
+    "$FLUTTER" "$@"
+}
+
+[[ "$(id -u)" -eq 0 ]] || fail "run this workflow with sudo -E"
 [[ "$RELEASE_ID" =~ ^[A-Za-z0-9._-]+$ ]] ||
   fail "release identifier contains unsupported characters"
 [[ -f "$ARCHIVE" ]] || fail "archive not found: $ARCHIVE"
@@ -44,6 +56,7 @@ echo "[1/10] Extracting isolated release"
 rm -rf -- "$APP_ROOT"
 mkdir -p "$APP_ROOT" "$BACKUP"
 tar -xzf "$ARCHIVE" -C "$APP_ROOT"
+chown -R ubuntu:ubuntu "$APP_ROOT"
 [[ -f "$SOURCE_ROOT/lmss2/pubspec.yaml" ]] || fail "unexpected archive layout"
 [[ -f "$SOURCE_ROOT/lms_v2_backend/app/main.py" ]] || fail "backend source is missing"
 
@@ -52,15 +65,15 @@ python3 -m compileall -q "$SOURCE_ROOT/lms_v2_backend/app"
 
 echo "[3/10] Resolving Flutter dependencies"
 cd "$SOURCE_ROOT/lmss2"
-"$FLUTTER" pub get
+flutter_as_ubuntu pub get
 
 echo "[4/10] Running strict Flutter analysis"
-"$FLUTTER" analyze
+flutter_as_ubuntu analyze
 
 echo "[5/10] Building web and signed Android artifacts"
-"$FLUTTER" build web --release --no-wasm-dry-run
-"$FLUTTER" build apk --release
-"$FLUTTER" build appbundle --release
+flutter_as_ubuntu build web --release --no-wasm-dry-run
+flutter_as_ubuntu build apk --release
+flutter_as_ubuntu build appbundle --release
 [[ -s build/web/index.html ]] || fail "web build is incomplete"
 [[ -s build/app/outputs/flutter-apk/app-release.apk ]] || fail "APK build is incomplete"
 [[ -s build/app/outputs/bundle/release/app-release.aab ]] || fail "AAB build is incomplete"
