@@ -3,13 +3,17 @@ set -Eeuo pipefail
 
 # Usage:
 #   sudo -E bash deploy/deploy_phase8_release.sh \
-#     /home/ubuntu/releases/lmss2-phase8-<commit>.tar.gz <commit>
-#
-# Required environment variables:
-#   LMS_KEYSTORE_PATH, LMS_KEYSTORE_PASSWORD, LMS_KEY_ALIAS, LMS_KEY_PASSWORD
+#     /home/ubuntu/releases/lmss2-phase8-<commit>.tar.gz <commit> \
+#     /home/ubuntu/releases/firefly-lms-release-secure.jks \
+#     /home/ubuntu/releases/android-signing-secure.env
 
 ARCHIVE="${1:?release archive is required}"
 RELEASE_ID="${2:?release identifier is required}"
+LMS_KEYSTORE_PATH="${3:?release keystore path is required}"
+SIGNING_ENV="${4:?signing environment file is required}"
+LMS_KEYSTORE_PASSWORD=""
+LMS_KEY_ALIAS=""
+LMS_KEY_PASSWORD=""
 VERSION="${LMS_RELEASE_VERSION:-1.1.0}"
 MINIMUM_VERSION="${LMS_MIN_ANDROID_VERSION:-1.0.0}"
 APP_ROOT="/home/ubuntu/releases/phase8-${RELEASE_ID}"
@@ -29,6 +33,20 @@ fail() {
   exit 1
 }
 
+load_signing_environment() {
+  local key value
+  [[ -f "$SIGNING_ENV" ]] || fail "signing environment file is missing"
+  while IFS='=' read -r key value || [[ -n "$key" ]]; do
+    value="${value%$'\r'}"
+    case "$key" in
+      LMS_KEYSTORE_PASSWORD) LMS_KEYSTORE_PASSWORD="$value" ;;
+      LMS_KEY_ALIAS) LMS_KEY_ALIAS="$value" ;;
+      LMS_KEY_PASSWORD) LMS_KEY_PASSWORD="$value" ;;
+    esac
+  done < "$SIGNING_ENV"
+  export LMS_KEYSTORE_PATH LMS_KEYSTORE_PASSWORD LMS_KEY_ALIAS LMS_KEY_PASSWORD
+}
+
 flutter_as_ubuntu() {
   runuser -u ubuntu -- env \
     HOME=/home/ubuntu \
@@ -45,6 +63,7 @@ flutter_as_ubuntu() {
   fail "release identifier contains unsupported characters"
 [[ -f "$ARCHIVE" ]] || fail "archive not found: $ARCHIVE"
 [[ -x "$FLUTTER" ]] || fail "Flutter SDK not found: $FLUTTER"
+load_signing_environment
 [[ -f "${LMS_KEYSTORE_PATH:-}" ]] || fail "release keystore is missing"
 [[ -n "${LMS_KEYSTORE_PASSWORD:-}" ]] || fail "LMS_KEYSTORE_PASSWORD is missing"
 [[ -n "${LMS_KEY_ALIAS:-}" ]] || fail "LMS_KEY_ALIAS is missing"
